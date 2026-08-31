@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DISIPLIN.</title>
+<link rel="manifest" href="/manifest.json" />
+<link rel="icon" href="/icon-192.png" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<meta name="theme-color" content="#ece3d0" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="DISIPLIN." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="auth-screen" id="auth-screen">
+    <div class="auth-card profile-picker" id="profile-picker-view">
+      <h1><img src="logo.png" alt="DISIPLIN." class="wordmark" /></h1>
+      <p class="tagline">Hvem er det?</p>
+      <div class="auth-error" id="profiles-error" hidden></div>
+      <div class="profile-grid" id="profile-grid"></div>
+    </div>
+
+    <div class="auth-card name-view" id="name-view" hidden>
+      <button type="button" class="ghost pin-back" id="name-back">← Tilbake</button>
+      <h1>Ny bruker</h1>
+      <p class="tagline">Hva heter du?</p>
+      <div class="auth-error" id="name-error" hidden></div>
+      <form id="name-form" class="name-form">
+        <input type="text" id="new-profile-name" placeholder="Navnet ditt" autocomplete="off" maxlength="20" />
+        <button type="submit" class="primary">Fortsett</button>
+      </form>
+    </div>
+
+    <div class="auth-card pin-view" id="pin-view" hidden>
+      <button type="button" class="ghost pin-back" id="pin-back">← Tilbake</button>
+      <div class="pin-avatar" id="pin-avatar"></div>
+      <h2 id="pin-name"></h2>
+      <p class="tagline" id="pin-subtitle">Skriv inn koden din</p>
+
+      <div class="auth-error" id="pin-error" hidden></div>
+
+      <div class="pin-dots" id="pin-dots">
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+      </div>
+
+      <div class="pin-keypad" id="pin-keypad">
+        <button type="button" class="pin-key" data-key="1">1</button>
+        <button type="button" class="pin-key" data-key="2">2</button>
+        <button type="button" class="pin-key" data-key="3">3</button>
+        <button type="button" class="pin-key" data-key="4">4</button>
+        <button type="button" class="pin-key" data-key="5">5</button>
+        <button type="button" class="pin-key" data-key="6">6</button>
+        <button type="button" class="pin-key" data-key="7">7</button>
+        <button type="button" class="pin-key" data-key="8">8</button>
+        <button type="button" class="pin-key" data-key="9">9</button>
+        <button type="button" class="pin-key pin-key-empty" disabled></button>
+        <button type="button" class="pin-key" data-key="0">0</button>
+        <button type="button" class="pin-key pin-key-del" id="pin-del">⌫</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app" id="app" hidden>
+    <header class="topbar">
+      <div class="topbar-row">
+        <div>
+          <h1><img src="logo.png" alt="DISIPLIN." class="wordmark" /></h1>
+          <p class="tagline">Planlegg kvelden før. Følg opp dagen. Bygg streaken din.</p>
+        </div>
+        <div class="topbar-actions">
+          <select id="theme-select" class="theme-select"></select>
+          <span class="username-pill" id="username-pill"></span>
+          <button class="ghost" id="logout-btn">Logg ut</button>
+        </div>
+      </div>
+    </header>
+
+    <section class="pet-card" id="pet-card">
+      <div class="pet-emoji" id="pet-emoji">🥚</div>
+      <div class="pet-info">
+        <div class="pet-name-row">
+          <span class="pet-name" id="pet-name">Egg</span>
+          <span class="pet-mood" id="pet-mood"></span>
+        </div>
+        <div class="level-row">
+          <span id="level-label">Nivå 1</span>
+          <div class="xp-bar"><div class="xp-fill" id="xp-fill"></div></div>
+          <span class="xp-label" id="xp-label"></span>
+        </div>
+        <div class="streak-row">
+          <span class="streak" id="streak">🔥 0 dager</span>
+          <span class="longest-streak" id="longest-streak"></span>
+        </div>
+      </div>
+    </section>
+
+    <main class="columns">
+      <section class="card">
+        <h2>I dag <span class="date-pill" id="today-date"></span></h2>
+        <form id="add-today-task-form" class="add-task-form">
+          <input type="text" id="new-today-task-title" placeholder="Legg til en oppgave for i dag…" autocomplete="off" />
+          <button type="submit" class="primary">Legg til</button>
+        </form>
+        <ul class="task-list" id="today-tasks"></ul>
+        <p class="empty-hint" id="today-empty" hidden>Ingen oppgaver planlagt for i dag.</p>
+
+        <div id="reflection-closed" class="reflection-summary" hidden></div>
+
+        <div id="reflection-form" class="reflection-form" hidden>
+          <h3>Kveldsrefleksjon</h3>
+          <p class="hint">Hvor godt fulgte du planen i dag?</p>
+          <div class="stars" id="rating-stars">
+            <button data-value="1">★</button>
+            <button data-value="2">★</button>
+            <button data-value="3">★</button>
+            <button data-value="4">★</button>
+            <button data-value="5">★</button>
+            <button data-value="6">★</button>
+            <button data-value="7">★</button>
+            <button data-value="8">★</button>
+            <button data-value="9">★</button>
+            <button data-value="10">★</button>
+          </div>
+          <textarea id="reflection-notes" placeholder="Noen tanker om dagen? (valgfritt)"></textarea>
+          <button class="primary" id="submit-reflection">Avslutt dagen</button>
+        </div>
+
+        <button class="secondary" id="open-reflection-btn" hidden>Fullfør dagen ✅</button>
+      </section>
+
+      <section class="card">
+        <h2>Planlegg i morgen <span class="date-pill" id="tomorrow-date"></span></h2>
+        <form id="add-task-form" class="add-task-form">
+          <input type="text" id="new-task-title" placeholder="Legg til en oppgave for i morgen…" autocomplete="off" />
+          <button type="submit" class="primary">Legg til</button>
+        </form>
+        <ul class="task-list" id="tomorrow-tasks"></ul>
+        <p class="empty-hint" id="tomorrow-empty" hidden>Ingen oppgaver lagt til enda. Dette er ritualet ditt for kvelden!</p>
+      </section>
+    </main>
+
+    <section class="card calendar-card">
+      <h2>Kalender <span class="date-pill">Planlegg i forveien</span></h2>
+      <p class="hint">Legg inn ting flere dager fram i tid – de dukker automatisk opp i "I dag" den dagen det gjelder.</p>
+      <form id="add-calendar-task-form" class="add-task-form calendar-form">
+        <input type="date" id="new-calendar-task-date" />
+        <input type="text" id="new-calendar-task-title" placeholder="Hva skal skje?" autocomplete="off" />
+        <button type="submit" class="primary">Legg til</button>
+      </form>
+      <div class="upcoming-list" id="upcoming-list"></div>
+      <p class="empty-hint" id="upcoming-empty" hidden>Ingen kommende planer lagt til enda.</p>
+    </section>
+
+    <div class="history-layout">
+      <section class="card history-card">
+        <h2>Siste 14 dager</h2>
+        <div class="history-grid" id="history-grid"></div>
+      </section>
+
+      <section class="card weekly-card">
+        <h2>Dager og uker</h2>
+        <p class="hint">Trykk på en uke for å se dagene og sjekklisten din.</p>
+        <div class="week-list" id="week-list"></div>
+        <p class="empty-hint" id="week-list-empty" hidden>Ingen dager registrert enda.</p>
+      </section>
+    </div>
+
+    <section class="card leaderboard-card">
+      <h2>🏆 Leaderboard</h2>
+      <ol class="leaderboard-list" id="leaderboard-list"></ol>
+      <p class="empty-hint" id="leaderboard-empty" hidden>Ingen andre har blitt med enda.</p>
+    </section>
+
+    <div id="toast" class="toast" hidden></div>
+  </div>
+
+  <script src="app.js"></script>
+  <!-- app.js styrer synlighet av #auth-screen og #app basert på innloggingsstatus -->
+  <noscript>Denne appen krever JavaScript.</noscript>
+</body>
+</html>
