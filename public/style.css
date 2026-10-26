@@ -1,111 +1,112 @@
-/* Alle temaer er nå bygget rundt logoen: en varm papir-/washi-aktig
-   bakgrunn, blekksort tekst og et fargesterkt aksentpar hentet fra hvert
-   sitt "humør" - Samurai (standard) er selve logofargene (beige + rød). */
+/* Alle temaer er mørke og bygget rundt logoen sin rå, grafiske "samurai"-
+   identitet: flate paneler (ingen glassmorphism-uskarphet), sterkere
+   kontraster, og et fargesterkt aksentpar per tema. Samurai (standard) er
+   selve logofargene - sort/kull og dyp rød. */
 
 :root,
 html[data-theme="dark"] {
-  /* Samurai (standard) - beige washipapir, sort blekk, dyp rød */
-  --bg: #ece3d0;
-  --bg-glow-1: rgba(160, 31, 34, 0.10);
-  --bg-glow-2: rgba(120, 100, 70, 0.10);
-  --card: rgba(255, 252, 244, 0.72);
-  --card-solid: #fbf7ee;
-  --card-border: rgba(28, 22, 16, 0.10);
-  --well: rgba(28, 22, 16, 0.05);
-  --text: #1c1a17;
-  --muted: #756b5c;
-  --accent: #a01f22;
-  --accent-2: #c62828;
-  --accent-soft: rgba(160, 31, 34, 0.13);
-  --mint: #4b7a4f;
-  --mint-soft: rgba(75, 122, 79, 0.10);
-  --mint-soft-border: rgba(75, 122, 79, 0.32);
-  --amber: #b8862f;
-  --danger: #b3261e;
-  --danger-soft: rgba(179, 38, 30, 0.10);
-  --hover-tint: rgba(28, 22, 16, 0.20);
-  --hover-bg: rgba(28, 22, 16, 0.06);
-  --radius: 16px;
-  --shadow: 0 1px 2px rgba(40, 30, 20, 0.05), 0 14px 30px -16px rgba(40, 30, 20, 0.28);
-  --shadow-lg: 0 24px 50px -20px rgba(40, 30, 20, 0.35);
+  /* Samurai (standard) - sumi-sort bunn, varmt hvit tekst, dyp rød */
+  --bg: #13100e;
+  --bg-glow-1: rgba(209, 58, 53, 0.14);
+  --bg-glow-2: rgba(130, 95, 40, 0.08);
+  --card: #1c1714;
+  --card-solid: #1c1714;
+  --card-border: rgba(245, 232, 215, 0.12);
+  --well: rgba(0, 0, 0, 0.35);
+  --text: #f3ece0;
+  --muted: #a69684;
+  --accent: #d1382f;
+  --accent-2: #e8574f;
+  --accent-soft: rgba(209, 56, 47, 0.18);
+  --mint: #5fae68;
+  --mint-soft: rgba(95, 174, 104, 0.14);
+  --mint-soft-border: rgba(95, 174, 104, 0.38);
+  --amber: #e0a940;
+  --danger: #e2554f;
+  --danger-soft: rgba(226, 85, 79, 0.16);
+  --hover-tint: rgba(245, 232, 215, 0.2);
+  --hover-bg: rgba(245, 232, 215, 0.07);
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 16px 32px -18px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 26px 54px -22px rgba(0, 0, 0, 0.65);
 }
 
 html[data-theme="ocean"] {
-  /* Hav - kjølig blågrå papir, dyp havblå */
-  --bg: #e2ebee;
-  --bg-glow-1: rgba(15, 110, 148, 0.12);
-  --bg-glow-2: rgba(20, 160, 150, 0.10);
-  --card: rgba(250, 253, 254, 0.75);
-  --card-solid: #f5fafb;
-  --card-border: rgba(14, 40, 50, 0.10);
-  --well: rgba(14, 40, 50, 0.05);
-  --text: #14262c;
-  --muted: #55707a;
-  --accent: #0f6e94;
-  --accent-2: #1596c2;
-  --accent-soft: rgba(15, 110, 148, 0.14);
-  --mint: #2f9e8f;
-  --mint-soft: rgba(47, 158, 143, 0.10);
-  --mint-soft-border: rgba(47, 158, 143, 0.32);
-  --amber: #d69b1f;
-  --danger: #c0392b;
-  --danger-soft: rgba(192, 57, 43, 0.10);
-  --hover-tint: rgba(14, 40, 50, 0.20);
-  --hover-bg: rgba(14, 40, 50, 0.06);
-  --shadow: 0 1px 2px rgba(10, 30, 38, 0.05), 0 14px 30px -16px rgba(10, 30, 38, 0.24);
-  --shadow-lg: 0 24px 50px -20px rgba(10, 30, 38, 0.32);
+  /* Hav - dyp navy-sort, elektrisk blå */
+  --bg: #0a1519;
+  --bg-glow-1: rgba(31, 159, 212, 0.16);
+  --bg-glow-2: rgba(20, 190, 170, 0.08);
+  --card: #112025;
+  --card-solid: #112025;
+  --card-border: rgba(222, 241, 245, 0.11);
+  --well: rgba(0, 0, 0, 0.35);
+  --text: #e8f3f6;
+  --muted: #86a3ac;
+  --accent: #1f9fd4;
+  --accent-2: #4dc3ef;
+  --accent-soft: rgba(31, 159, 212, 0.18);
+  --mint: #38c3a8;
+  --mint-soft: rgba(56, 195, 168, 0.14);
+  --mint-soft-border: rgba(56, 195, 168, 0.38);
+  --amber: #e3b23d;
+  --danger: #e2554f;
+  --danger-soft: rgba(226, 85, 79, 0.16);
+  --hover-tint: rgba(222, 241, 245, 0.2);
+  --hover-bg: rgba(222, 241, 245, 0.07);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 16px 32px -18px rgba(0, 10, 16, 0.55);
+  --shadow-lg: 0 26px 54px -22px rgba(0, 10, 16, 0.65);
 }
 
 html[data-theme="forest"] {
-  /* Skog - salvie-papir, dyp barskog-grønn */
-  --bg: #e6ead9;
-  --bg-glow-1: rgba(63, 125, 63, 0.12);
-  --bg-glow-2: rgba(140, 150, 60, 0.10);
-  --card: rgba(250, 252, 246, 0.75);
-  --card-solid: #f6f8f0;
-  --card-border: rgba(30, 40, 20, 0.10);
-  --well: rgba(30, 40, 20, 0.05);
-  --text: #1c2416;
-  --muted: #5c6b4e;
-  --accent: #3f7d3f;
-  --accent-2: #5da052;
-  --accent-soft: rgba(63, 125, 63, 0.14);
-  --mint: #2f8f6a;
-  --mint-soft: rgba(47, 143, 106, 0.10);
-  --mint-soft-border: rgba(47, 143, 106, 0.32);
-  --amber: #c08a2e;
-  --danger: #b3402c;
-  --danger-soft: rgba(179, 64, 44, 0.10);
-  --hover-tint: rgba(30, 40, 20, 0.20);
-  --hover-bg: rgba(30, 40, 20, 0.06);
-  --shadow: 0 1px 2px rgba(20, 28, 12, 0.05), 0 14px 30px -16px rgba(20, 28, 12, 0.26);
-  --shadow-lg: 0 24px 50px -20px rgba(20, 28, 12, 0.34);
+  /* Skog - dyp barskog-sort, frodig grønn */
+  --bg: #0c1309;
+  --bg-glow-1: rgba(79, 174, 85, 0.16);
+  --bg-glow-2: rgba(150, 170, 50, 0.08);
+  --card: #141f10;
+  --card-solid: #141f10;
+  --card-border: rgba(230, 238, 212, 0.11);
+  --well: rgba(0, 0, 0, 0.35);
+  --text: #e9f0e1;
+  --muted: #92a685;
+  --accent: #4fae55;
+  --accent-2: #78c97a;
+  --accent-soft: rgba(79, 174, 85, 0.18);
+  --mint: #38b894;
+  --mint-soft: rgba(56, 184, 148, 0.14);
+  --mint-soft-border: rgba(56, 184, 148, 0.38);
+  --amber: #d2a23f;
+  --danger: #e2554f;
+  --danger-soft: rgba(226, 85, 79, 0.16);
+  --hover-tint: rgba(230, 238, 212, 0.2);
+  --hover-bg: rgba(230, 238, 212, 0.07);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 16px 32px -18px rgba(4, 10, 2, 0.55);
+  --shadow-lg: 0 26px 54px -22px rgba(4, 10, 2, 0.65);
 }
 
 html[data-theme="sunset"] {
-  /* Solnedgang - fersken-papir, brent oransje */
-  --bg: #f1e0d0;
-  --bg-glow-1: rgba(209, 87, 31, 0.14);
-  --bg-glow-2: rgba(214, 60, 100, 0.08);
-  --card: rgba(255, 250, 244, 0.75);
-  --card-solid: #fdf6ee;
-  --card-border: rgba(60, 30, 15, 0.10);
-  --well: rgba(60, 30, 15, 0.05);
-  --text: #2b1710;
-  --muted: #8a5f47;
-  --accent: #d1571f;
-  --accent-2: #e17b3e;
-  --accent-soft: rgba(209, 87, 31, 0.15);
-  --mint: #4f8f5e;
-  --mint-soft: rgba(79, 143, 94, 0.10);
-  --mint-soft-border: rgba(79, 143, 94, 0.32);
-  --amber: #d1932a;
-  --danger: #c0392b;
-  --danger-soft: rgba(192, 57, 43, 0.10);
-  --hover-tint: rgba(60, 30, 15, 0.20);
-  --hover-bg: rgba(60, 30, 15, 0.06);
-  --shadow: 0 1px 2px rgba(40, 20, 8, 0.05), 0 14px 30px -16px rgba(40, 20, 8, 0.26);
-  --shadow-lg: 0 24px 50px -20px rgba(40, 20, 8, 0.34);
+  /* Solnedgang - brent umbra-sort, glødende oransje */
+  --bg: #170f0a;
+  --bg-glow-1: rgba(228, 106, 46, 0.18);
+  --bg-glow-2: rgba(220, 70, 110, 0.08);
+  --card: #201509;
+  --card-solid: #201509;
+  --card-border: rgba(250, 231, 212, 0.11);
+  --well: rgba(0, 0, 0, 0.35);
+  --text: #f5e8da;
+  --muted: #b89f88;
+  --accent: #e46a2e;
+  --accent-2: #f08f4f;
+  --accent-soft: rgba(228, 106, 46, 0.18);
+  --mint: #5cb06a;
+  --mint-soft: rgba(92, 176, 106, 0.14);
+  --mint-soft-border: rgba(92, 176, 106, 0.38);
+  --amber: #e3ab3f;
+  --danger: #e2554f;
+  --danger-soft: rgba(226, 85, 79, 0.16);
+  --hover-tint: rgba(250, 231, 212, 0.2);
+  --hover-bg: rgba(250, 231, 212, 0.07);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 16px 32px -18px rgba(10, 4, 0, 0.55);
+  --shadow-lg: 0 26px 54px -22px rgba(10, 4, 0, 0.65);
 }
 
 * { box-sizing: border-box; }
@@ -115,7 +116,7 @@ html[data-theme="sunset"] {
    overstyrt nettleserens standardoppførsel for hidden-attributtet. */
 [hidden] { display: none !important; }
 
-html { color-scheme: light; }
+html { color-scheme: dark; }
 
 body {
   margin: 0;
@@ -161,10 +162,8 @@ h1, h2, h3, .brand {
   width: 100%;
   max-width: 380px;
   background: var(--card);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
   border: 1px solid var(--card-border);
-  border-radius: 22px;
+  border-radius: 16px;
   padding: 32px 26px;
   text-align: center;
   box-shadow: var(--shadow-lg);
@@ -180,11 +179,8 @@ h1, h2, h3, .brand {
   margin: 0 0 4px;
   font-size: 1.5rem;
   font-weight: 800;
-  letter-spacing: -0.02em;
-  background: linear-gradient(120deg, var(--text), var(--accent-2));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.01em;
+  color: var(--text);
 }
 
 .wordmark {
@@ -207,7 +203,7 @@ h1, h2, h3, .brand {
   border: 1px solid var(--danger);
   color: var(--danger);
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: 8px;
   font-size: 0.88rem;
   margin-bottom: 14px;
   text-align: left;
@@ -246,7 +242,7 @@ h1, h2, h3, .brand {
   position: relative;
   width: 74px;
   height: 74px;
-  border-radius: 18px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -255,7 +251,7 @@ h1, h2, h3, .brand {
   font-weight: 700;
   color: #26202a;
   border: 2px solid transparent;
-  box-shadow: 0 8px 16px -8px rgba(20, 15, 10, 0.35);
+  box-shadow: 0 8px 16px -8px rgba(0, 0, 0, 0.5);
   transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
@@ -263,7 +259,7 @@ h1, h2, h3, .brand {
 .profile-tile:focus-visible .profile-avatar {
   border-color: var(--accent);
   transform: translateY(-3px) scale(1.04);
-  box-shadow: 0 14px 24px -10px rgba(20, 15, 10, 0.4), 0 0 0 4px var(--accent-soft);
+  box-shadow: 0 14px 24px -10px rgba(0, 0, 0, 0.55), 0 0 0 4px var(--accent-soft);
 }
 
 .profile-tile:active .profile-avatar {
@@ -331,7 +327,7 @@ h1, h2, h3, .brand {
   width: 68px;
   height: 68px;
   margin: 8px auto 10px;
-  border-radius: 18px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -339,7 +335,7 @@ h1, h2, h3, .brand {
   font-family: 'Sora', sans-serif;
   font-weight: 700;
   color: #26202a;
-  box-shadow: 0 10px 20px -10px rgba(20, 15, 10, 0.4);
+  box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.55);
 }
 
 .pin-view h2 {
@@ -382,7 +378,7 @@ h1, h2, h3, .brand {
   background: var(--well);
   border: 1px solid var(--card-border);
   color: var(--text);
-  border-radius: 14px;
+  border-radius: 10px;
   font-size: 1.2rem;
   padding: 14px 0;
   transition: border-color 0.15s ease, transform 0.1s ease, background 0.15s ease;
@@ -453,7 +449,7 @@ h1, h2, h3, .brand {
   background: var(--well);
   color: var(--text);
   border: 1px solid var(--card-border);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 8px 10px;
   font-size: 0.85rem;
   font-family: inherit;
@@ -481,8 +477,6 @@ button.ghost:hover { color: var(--text); border-color: var(--muted); }
 
 .card, .pet-card {
   background: var(--card);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
   border: 1px solid var(--card-border);
   border-radius: var(--radius);
   padding: 22px;
@@ -501,6 +495,7 @@ button.ghost:hover { color: var(--text); border-color: var(--muted); }
   margin-bottom: 20px;
   position: relative;
   overflow: hidden;
+  border-left: 4px solid var(--accent);
 }
 
 .pet-card::before {
@@ -516,7 +511,7 @@ button.ghost:hover { color: var(--text); border-color: var(--muted); }
   line-height: 1;
   position: relative;
   z-index: 1;
-  filter: drop-shadow(0 6px 14px rgba(20, 15, 10, 0.22));
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5));
 }
 
 .pet-info { flex: 1; min-width: 0; position: relative; z-index: 1; }
@@ -563,7 +558,7 @@ button.ghost:hover { color: var(--text); border-color: var(--muted); }
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
   transform: translateX(-100%);
   animation: shimmer 2.6s ease-in-out infinite;
 }
@@ -592,16 +587,29 @@ button.ghost:hover { color: var(--text); border-color: var(--muted); }
 
 .card h2 {
   margin: 0 0 14px;
-  font-size: 1.08rem;
-  font-weight: 700;
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+}
+
+.card h2::before {
+  content: '';
+  display: inline-block;
+  width: 9px;
+  height: 1.1em;
+  background: var(--accent);
+  flex-shrink: 0;
 }
 
 .date-pill {
   font-size: 0.75rem;
   font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
   color: var(--muted);
   background: var(--well);
   border: 1px solid var(--card-border);
@@ -625,7 +633,7 @@ button.ghost:hover { color: var(--text); border-color: var(--muted); }
   padding: 10px 12px;
   background: var(--well);
   border: 1px solid var(--card-border);
-  border-radius: 12px;
+  border-radius: 9px;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
@@ -712,7 +720,7 @@ button.ghost:hover { color: var(--text); border-color: var(--muted); }
 
 .upcoming-day {
   border: 1px solid var(--card-border);
-  border-radius: 12px;
+  border-radius: 9px;
   background: var(--well);
   padding: 12px 14px;
 }
@@ -729,12 +737,12 @@ input[type="text"], input[type="password"], input[type="date"], textarea {
   background: var(--well);
   border: 1px solid var(--card-border);
   color: var(--text);
-  border-radius: 12px;
+  border-radius: 9px;
   padding: 11px 13px;
   font-size: 0.95rem;
   font-family: inherit;
   width: 100%;
-  color-scheme: light;
+  color-scheme: dark;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -766,19 +774,20 @@ button {
   cursor: pointer;
   font-family: inherit;
   font-size: 0.92rem;
-  border-radius: 11px;
+  font-weight: 600;
+  border-radius: 9px;
   border: 1px solid transparent;
   padding: 10px 16px;
-  transition: transform 0.12s ease, box-shadow 0.18s ease, filter 0.15s ease;
+  transition: transform 0.12s ease, box-shadow 0.18s ease, filter 0.15s ease, background 0.15s ease;
 }
 
 button.primary {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: white;
+  background: var(--accent);
+  color: #fff;
   font-weight: 700;
-  box-shadow: 0 10px 24px -10px var(--accent-soft);
+  box-shadow: 0 10px 22px -12px var(--accent-soft);
 }
-button.primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
+button.primary:hover { filter: brightness(1.12); transform: translateY(-1px); }
 button.primary:active { transform: translateY(0); }
 
 button.secondary {
@@ -792,7 +801,14 @@ button.secondary {
 button.secondary:hover { background: color-mix(in srgb, var(--accent) 26%, transparent); }
 
 .reflection-form { margin-top: 12px; }
-.reflection-form h3 { margin: 0 0 4px; font-size: 1rem; font-weight: 700; }
+.reflection-form h3 {
+  margin: 0 0 4px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
 .hint { color: var(--muted); font-size: 0.88rem; margin: 0 0 8px; }
 
 .stars {
@@ -817,7 +833,7 @@ button.secondary:hover { background: color-mix(in srgb, var(--accent) 26%, trans
 .reflection-summary {
   margin-top: 12px;
   padding: 14px;
-  border-radius: 12px;
+  border-radius: 9px;
   background: var(--mint-soft);
   border: 1px solid var(--mint-soft-border);
   font-size: 0.92rem;
@@ -851,7 +867,7 @@ button.secondary:hover { background: color-mix(in srgb, var(--accent) 26%, trans
 }
 .history-cell {
   aspect-ratio: 1;
-  border-radius: 7px;
+  border-radius: 5px;
   background: var(--well);
   border: 1px solid var(--card-border);
   transition: transform 0.12s ease;
@@ -880,7 +896,7 @@ button.secondary:hover { background: color-mix(in srgb, var(--accent) 26%, trans
 
 .week-tab {
   border: 1px solid var(--card-border);
-  border-radius: 12px;
+  border-radius: 9px;
   background: var(--well);
   overflow: hidden;
   transition: border-color 0.15s ease;
@@ -1010,7 +1026,7 @@ button.secondary:hover { background: color-mix(in srgb, var(--accent) 26%, trans
   padding: 11px 12px;
   background: var(--well);
   border: 1px solid var(--card-border);
-  border-radius: 12px;
+  border-radius: 9px;
   transition: transform 0.12s ease, border-color 0.12s ease;
 }
 
@@ -1065,7 +1081,7 @@ button.secondary:hover { background: color-mix(in srgb, var(--accent) 26%, trans
   border: 1px solid var(--accent);
   color: var(--text);
   padding: 12px 20px;
-  border-radius: 14px;
+  border-radius: 10px;
   box-shadow: var(--shadow-lg);
   font-size: 0.92rem;
   max-width: 90vw;

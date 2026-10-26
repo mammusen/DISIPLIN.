@@ -78,7 +78,7 @@ profil når de vil. To profiler kan ikke ha samme navn.
 Hver person får sin egen XP, streak, kjæledyr og oppgaveliste — helt
 adskilt fra resten av familien. Man kan bytte fargetema for sin egen
 profil oppe til høyre (Samurai, Hav, Skog, Solnedgang) — alle bygget rundt
-samme varme papir-stil som logoen, bare med ulik fargeklang.
+samme mørke, grafiske stil som logoen, bare med ulik fargeklang.
 
 **Glemt kode?** Det finnes ingen "glemt kode"-knapp i appen. Går det galt
 må dere nullstille koden manuelt i databasen (se under) — eller rett og

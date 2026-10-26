@@ -61,7 +61,7 @@ function applyTheme(theme) {
 
 // --- Auth / skjermbytte (Netflix-stil profilvelger) -----------------------
 
-const AVATAR_COLORS = ['#e8a0a8', '#a0c4e8', '#e8c8a0', '#b0d8a8', '#c8a8e0', '#e8d0a0'];
+const AVATAR_COLORS = ['#d9475a', '#3f7fd4', '#d98a2e', '#3f9d5e', '#8a52c9', '#c9a52e'];
 
 let profiles = [];
 let activeProfile = null; // { id, name } for opplåsing, eller { name, isNew: true } for opprettelse
