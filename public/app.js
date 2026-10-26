@@ -418,6 +418,9 @@ function render() {
   // History
   renderHistory();
   renderWeekList();
+
+  // Hevy
+  renderHevy();
 }
 
 function addDaysClient(dateStr, n) {
@@ -627,6 +630,152 @@ function renderWeekList() {
 
   container.dataset.initialized = '1';
 }
+
+// --- Hevy-integrasjon -------------------------------------------------
+
+function prettyMuscleGroup(key) {
+  if (!key) return 'Annet';
+  return key
+    .split('_')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
+function renderHevy() {
+  const h = state.hevy || { connected: false };
+  const disc = document.getElementById('hevy-disconnected');
+  const conn = document.getElementById('hevy-connected');
+  const weekLabel = document.getElementById('hevy-week-label');
+  const calRow = document.getElementById('calendar-hevy-row');
+
+  if (!h.connected) {
+    disc.hidden = false;
+    conn.hidden = true;
+    weekLabel.textContent = 'Ikke koblet til';
+    calRow.hidden = true;
+    return;
+  }
+
+  disc.hidden = true;
+  conn.hidden = false;
+  weekLabel.textContent = 'Denne uken';
+  calRow.hidden = false;
+
+  const statusEl = document.getElementById('hevy-sync-status');
+  if (h.lastSyncError) {
+    statusEl.textContent = `⚠️ ${h.lastSyncError}`;
+  } else if (h.lastSyncAt) {
+    const d = new Date(h.lastSyncAt);
+    statusEl.textContent = `Sist synkronisert: ${d.toLocaleDateString('no-NO', { day: 'numeric', month: 'short' })} kl. ${d.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' })}`;
+  } else {
+    statusEl.textContent = 'Ikke synkronisert enda.';
+  }
+
+  renderHevyChart(h.weeklyLoad || {});
+}
+
+function renderHevyChart(weeklyLoad) {
+  const chart = document.getElementById('hevy-chart');
+  const empty = document.getElementById('hevy-empty');
+  chart.innerHTML = '';
+  const entries = Object.entries(weeklyLoad).sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0) {
+    empty.hidden = false;
+    return;
+  }
+  empty.hidden = true;
+  const max = Math.max(...entries.map(([, v]) => v), 1);
+  for (const [group, vol] of entries) {
+    const row = document.createElement('div');
+    row.className = 'hevy-bar-row';
+
+    const label = document.createElement('span');
+    label.className = 'hevy-bar-label';
+    label.textContent = prettyMuscleGroup(group);
+
+    const track = document.createElement('div');
+    track.className = 'hevy-bar-track';
+    const fill = document.createElement('div');
+    fill.className = 'hevy-bar-fill';
+    fill.style.width = Math.max(4, Math.round((vol / max) * 100)) + '%';
+    track.appendChild(fill);
+
+    const value = document.createElement('span');
+    value.className = 'hevy-bar-value';
+    value.textContent = `${vol.toLocaleString('no-NO')} kg`;
+
+    row.append(label, track, value);
+    chart.appendChild(row);
+  }
+}
+
+document.getElementById('hevy-connect-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const input = document.getElementById('hevy-api-key-input');
+  const apiKey = input.value.trim();
+  if (!apiKey) return;
+  const btn = e.target.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  btn.textContent = 'Kobler til…';
+  try {
+    setState(await api('/api/hevy/key', { method: 'POST', body: JSON.stringify({ apiKey }) }));
+    input.value = '';
+    render();
+    showToast('Koblet til Hevy! 💪');
+  } catch (err) {
+    showToast(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Koble til';
+  }
+});
+
+document.getElementById('hevy-sync-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('hevy-sync-btn');
+  btn.disabled = true;
+  btn.textContent = 'Synkroniserer…';
+  try {
+    setState(await api('/api/hevy/sync', { method: 'POST' }));
+    render();
+  } catch (err) {
+    showToast(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Synkroniser ↻';
+  }
+});
+
+document.getElementById('hevy-disconnect-btn').addEventListener('click', async () => {
+  if (!confirm('Koble fra Hevy? Du kan koble til igjen når som helst.')) return;
+  try {
+    setState(await api('/api/hevy/key', { method: 'DELETE' }));
+    render();
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+document.getElementById('hevy-routine-refresh').addEventListener('click', async () => {
+  const sel = document.getElementById('hevy-routine-select');
+  try {
+    const res = await api('/api/hevy/routines');
+    sel.innerHTML = '<option value="">Velg en Hevy-rutine…</option>';
+    for (const r of res.routines) {
+      const opt = document.createElement('option');
+      opt.value = r.title;
+      opt.textContent = r.title;
+      sel.appendChild(opt);
+    }
+    showToast(`Hentet ${res.routines.length} rutiner fra Hevy.`);
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+document.getElementById('hevy-routine-select').addEventListener('change', (e) => {
+  const val = e.target.value;
+  if (val) document.getElementById('new-calendar-task-title').value = val;
+});
 
 function escapeHtml(str) {
   const d = document.createElement('div');

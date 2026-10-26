@@ -155,8 +155,39 @@
         <input type="text" id="new-calendar-task-title" placeholder="Hva skal skje?" autocomplete="off" />
         <button type="submit" class="primary">Legg til</button>
       </form>
+      <div class="calendar-hevy-row" id="calendar-hevy-row" hidden>
+        <select id="hevy-routine-select">
+          <option value="">Velg en Hevy-rutine…</option>
+        </select>
+        <button type="button" class="ghost" id="hevy-routine-refresh">Hent fra Hevy</button>
+      </div>
       <div class="upcoming-list" id="upcoming-list"></div>
       <p class="empty-hint" id="upcoming-empty" hidden>Ingen kommende planer lagt til enda.</p>
+    </section>
+
+    <section class="card hevy-card" id="hevy-card">
+      <h2>💪 Treningsbelastning <span class="date-pill" id="hevy-week-label">Ikke koblet til</span></h2>
+
+      <div id="hevy-disconnected">
+        <p class="hint">Koble til Hevy for å få løftevolum per muskelgruppe regnet ut automatisk, uke for uke.</p>
+        <form id="hevy-connect-form" class="add-task-form">
+          <input type="password" id="hevy-api-key-input" placeholder="Hevy API-nøkkel" autocomplete="off" />
+          <button type="submit" class="primary">Koble til</button>
+        </form>
+        <p class="hint">Finner du den ikke? Hevy-appen → Innstillinger → Developer (krever Hevy Pro).</p>
+      </div>
+
+      <div id="hevy-connected" hidden>
+        <div class="hevy-status-row">
+          <span id="hevy-sync-status" class="hint"></span>
+          <div class="hevy-status-actions">
+            <button type="button" class="ghost" id="hevy-sync-btn">Synkroniser ↻</button>
+            <button type="button" class="ghost" id="hevy-disconnect-btn">Koble fra</button>
+          </div>
+        </div>
+        <div id="hevy-chart" class="hevy-chart"></div>
+        <p class="empty-hint" id="hevy-empty" hidden>Ingen økter funnet for denne uken enda.</p>
+      </div>
     </section>
 
     <div class="history-layout">

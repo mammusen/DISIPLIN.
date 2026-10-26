@@ -58,6 +58,27 @@ PORT=4000 node server.js
   faktiske ukenummeret som overskrift, og et snitt av stjernevurderingen
   (summen av alle dagers vurdering delt på antall vurderte dager).
 
+## Hevy-integrasjon (treningsbelastning)
+
+Har du [Hevy](https://www.hevyapp.com) Pro, kan du koble kontoen din til i
+**Treningsbelastning**-kortet. Lim inn API-nøkkelen din (Hevy-appen →
+Innstillinger → Developer) — DISIPLIN. henter da automatisk de siste ukenes
+økter og regner ut hvor mye du har løftet (kg × reps, summert per sett) per
+muskelgruppe, vist som et stolpediagram for inneværende uke.
+
+Primær muskelgruppe for en øvelse telles fullt, sekundære muskelgrupper
+telles med halv vekt. Trykk **Synkroniser** for å hente nye økter når som
+helst — nøkkelen lagres sammen med resten av profilens data (i klartekst,
+på samme måte som appen allerede lagrer alt annet), ikke som en egen
+miljøvariabel, så hver profil kobler til sin egen Hevy-konto uavhengig av
+hvordan appen er driftet.
+
+Hevy sitt API har ingen "planlagt dato" for rutiner, så ekte automatisk
+planlegging (legg inn økt i Hevy → dukker opp i kalenderen på riktig dag)
+lar seg ikke gjøre. Det nest beste er bygget inn: trykk **Hent fra Hevy**
+under Kalender-kortet for å velge en av rutinene dine rett inn i
+tittelfeltet, så slipper du å skrive navnet på nytt.
+
 ## Leaderboard
 
 Nederst i appen vises en rangering av alle som har konto på deres instans,
@@ -178,6 +199,8 @@ Koden er delt i:
   `DATABASE_URL` er satt (brukes automatisk ved sky-hosting). Profiler
   (åpen registrering) og hver persons dagsplan-data.
 - `lib/themes.js` — liste over tilgjengelige fargetemaer
+- `lib/hevy.js` — Hevy API-klient (økter, rutiner, øvelsesbibliotek) og
+  utregning av ukentlig treningsbelastning per muskelgruppe
 - `lib/dates.js` — datohjelpere (tidssone Europe/Oslo)
 - `lib/gamification.js` — all spilllogikk (XP, nivå, streak, kjæledyr)
 - `public/` — frontend (ren HTML/CSS/JS, ingen rammeverk) + innloggings-

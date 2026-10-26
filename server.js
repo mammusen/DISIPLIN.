@@ -9,6 +9,10 @@ const auth = require('./lib/auth');
 const { todayStr, tomorrow, yesterday, daysBetween, addDays, weekStartStr, isoWeekNumber } = require('./lib/dates');
 const { levelInfo, petStage, petMood, computeDayClose, applyInactivityPenalty } = require('./lib/gamification');
 const { THEME_KEYS } = require('./lib/themes');
+const hevy = require('./lib/hevy');
+
+const HEVY_SYNC_WEEKS_BACK = 8; // hvor mange uker tilbake vi henter/viser belastning for
+const HEVY_TEMPLATE_CACHE_DAYS = 7; // hvor lenge øvelsesbiblioteket caches før det hentes på nytt
 
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -114,6 +118,74 @@ function upcomingList(data, today) {
     .sort((a, b) => (a.date < b.date ? -1 : 1));
 }
 
+// --- Hevy-integrasjon -----------------------------------------------------
+// Alt lagres inni det samme per-profil JSON-objektet som resten av
+// tilstanden (data.hevy) - ingen egen databasetabell eller miljøvariabel
+// trengs, siden hver profil kobler til sin egen Hevy-konto fra appen selv.
+
+function defaultHevyState() {
+  return {
+    apiKey: null,
+    connectedAt: null,
+    lastSyncAt: null,
+    lastSyncError: null,
+    templates: {},
+    templatesFetchedAt: null,
+    weeklyLoad: {},
+  };
+}
+
+function getHevy(data) {
+  if (!data.hevy) data.hevy = defaultHevyState();
+  return data.hevy;
+}
+
+async function refreshHevyTemplates(h) {
+  const templates = await hevy.fetchAllExerciseTemplates(h.apiKey);
+  h.templates = {};
+  for (const t of templates) {
+    h.templates[t.id] = {
+      title: t.title,
+      primary_muscle_group: t.primary_muscle_group,
+      secondary_muscle_groups: t.secondary_muscle_groups || [],
+    };
+  }
+  h.templatesFetchedAt = new Date().toISOString();
+}
+
+// Henter nylige økter fra Hevy og regner ut ukentlig løftevolum per
+// muskelgruppe. Feil her kastes aldri videre - de lagres som
+// h.lastSyncError slik at appen kan vise en tydelig melding uten at
+// resten av tilstanden blir utilgjengelig.
+async function runHevySync(userId, data) {
+  const h = getHevy(data);
+  try {
+    const today = todayStr();
+    const sinceDate = addDays(weekStartStr(today), -7 * (HEVY_SYNC_WEEKS_BACK - 1));
+
+    const templatesAge = h.templatesFetchedAt ? daysBetween(h.templatesFetchedAt.slice(0, 10), today) : 999;
+    if (!h.templatesFetchedAt || templatesAge > HEVY_TEMPLATE_CACHE_DAYS || Object.keys(h.templates || {}).length === 0) {
+      await refreshHevyTemplates(h);
+    }
+
+    const workouts = await hevy.fetchWorkoutsSince(h.apiKey, sinceDate);
+
+    const hasMissingTemplate = workouts
+      .flatMap((w) => w.exercises || [])
+      .some((ex) => ex.exercise_template_id && !h.templates[ex.exercise_template_id]);
+    if (hasMissingTemplate) {
+      await refreshHevyTemplates(h);
+    }
+
+    h.weeklyLoad = hevy.computeWeeklyLoad(workouts, h.templates, weekStartStr);
+    h.lastSyncAt = new Date().toISOString();
+    h.lastSyncError = null;
+  } catch (e) {
+    h.lastSyncError = e.message || 'Synkronisering mot Hevy feilet';
+  }
+  await db.saveState(userId, data);
+}
+
 async function publicState(userId, username, theme) {
   const data = await db.loadState(userId);
   const today = todayStr();
@@ -138,6 +210,9 @@ async function publicState(userId, username, theme) {
   const todayDay = data.days[today] || { plannedDate: null, tasks: [], reflection: null };
   const tomorrowDay = data.days[tmrw] || { plannedDate: null, tasks: [], reflection: null };
 
+  const h = getHevy(data);
+  const thisWeekStart = weekStartStr(today);
+
   return {
     date: today,
     user: { username, theme },
@@ -153,6 +228,12 @@ async function publicState(userId, username, theme) {
     history: historySlice(data),
     weekly: weeklyOverview(data),
     upcoming: upcomingList(data, today),
+    hevy: {
+      connected: !!h.apiKey,
+      lastSyncAt: h.lastSyncAt,
+      lastSyncError: h.lastSyncError,
+      weeklyLoad: h.weeklyLoad[thisWeekStart] || {},
+    },
     penalty,
   };
 }
@@ -424,6 +505,60 @@ async function handleReflection(req, res, user) {
   });
 }
 
+// --- Hevy-handlers (krever innlogging) ------------------------------------
+
+async function handleSetHevyKey(req, res, user) {
+  const body = await readJsonBody(req);
+  const apiKey = (body.apiKey || '').trim();
+  if (!apiKey) return sendJson(res, 400, { error: 'API-nøkkel mangler' });
+
+  try {
+    await hevy.testApiKey(apiKey);
+  } catch (e) {
+    const msg = e.code === 'HEVY_UNAUTHORIZED'
+      ? 'Hevy avviste nøkkelen - sjekk at du kopierte den riktig og at Hevy Pro er aktivt.'
+      : (e.message || 'Klarte ikke å verifisere nøkkelen mot Hevy');
+    return sendJson(res, 400, { error: msg });
+  }
+
+  const data = await db.loadState(user.id);
+  const h = getHevy(data);
+  h.apiKey = apiKey;
+  h.connectedAt = new Date().toISOString();
+  h.lastSyncError = null;
+  await db.saveState(user.id, data);
+
+  await runHevySync(user.id, data);
+  sendJson(res, 200, await publicState(user.id, user.username, user.theme));
+}
+
+async function handleClearHevyKey(req, res, user) {
+  const data = await db.loadState(user.id);
+  data.hevy = defaultHevyState();
+  await db.saveState(user.id, data);
+  sendJson(res, 200, await publicState(user.id, user.username, user.theme));
+}
+
+async function handleHevySync(req, res, user) {
+  const data = await db.loadState(user.id);
+  const h = getHevy(data);
+  if (!h.apiKey) return sendJson(res, 400, { error: 'Ingen Hevy-konto er koblet til' });
+  await runHevySync(user.id, data);
+  sendJson(res, 200, await publicState(user.id, user.username, user.theme));
+}
+
+async function handleHevyRoutines(req, res, user) {
+  const data = await db.loadState(user.id);
+  const h = getHevy(data);
+  if (!h.apiKey) return sendJson(res, 400, { error: 'Ingen Hevy-konto er koblet til' });
+  try {
+    const routines = await hevy.fetchRoutines(h.apiKey);
+    sendJson(res, 200, { routines: routines.map((r) => ({ id: r.id, title: r.title })) });
+  } catch (e) {
+    sendJson(res, 400, { error: e.message || 'Klarte ikke å hente rutiner fra Hevy' });
+  }
+}
+
 // --- Router -------------------------------------------------------------
 
 const server = http.createServer(async (req, res) => {
@@ -481,6 +616,18 @@ const server = http.createServer(async (req, res) => {
       }
       if (pathname === '/api/reflection' && req.method === 'POST') {
         return await handleReflection(req, res, user);
+      }
+      if (pathname === '/api/hevy/key' && req.method === 'POST') {
+        return await handleSetHevyKey(req, res, user);
+      }
+      if (pathname === '/api/hevy/key' && req.method === 'DELETE') {
+        return await handleClearHevyKey(req, res, user);
+      }
+      if (pathname === '/api/hevy/sync' && req.method === 'POST') {
+        return await handleHevySync(req, res, user);
+      }
+      if (pathname === '/api/hevy/routines' && req.method === 'GET') {
+        return await handleHevyRoutines(req, res, user);
       }
       return sendJson(res, 404, { error: 'Ukjent endepunkt' });
     }
