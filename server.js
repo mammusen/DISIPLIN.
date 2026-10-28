@@ -232,7 +232,7 @@ async function publicState(userId, username, theme) {
       connected: !!h.apiKey,
       lastSyncAt: h.lastSyncAt,
       lastSyncError: h.lastSyncError,
-      weeklyLoad: h.weeklyLoad[thisWeekStart] || {},
+      week: h.weeklyLoad[thisWeekStart] || { totalVolume: 0, muscleGroups: {} },
     },
     penalty,
   };

@@ -658,8 +658,10 @@ function renderHevy() {
 
   disc.hidden = true;
   conn.hidden = false;
-  weekLabel.textContent = 'Denne uken';
   calRow.hidden = false;
+
+  const week = h.week || { totalVolume: 0, muscleGroups: {} };
+  weekLabel.textContent = `${week.totalVolume.toLocaleString('no-NO')} kg denne uken`;
 
   const statusEl = document.getElementById('hevy-sync-status');
   if (h.lastSyncError) {
@@ -671,21 +673,29 @@ function renderHevy() {
     statusEl.textContent = 'Ikke synkronisert enda.';
   }
 
-  renderHevyChart(h.weeklyLoad || {});
+  renderHevyChart(week.muscleGroups || {});
 }
 
-function renderHevyChart(weeklyLoad) {
+function fmtSets(n) {
+  // Sekundære muskelgrupper teller med 0.5 sett, så tallet kan ha én
+  // desimal - vis det bare når det faktisk trengs (12 i stedet for 12.0).
+  const rounded = Math.round(n * 10) / 10;
+  const str = Number.isInteger(rounded) ? String(rounded) : rounded.toLocaleString('no-NO', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  return `${str} sett`;
+}
+
+function renderHevyChart(muscleGroups) {
   const chart = document.getElementById('hevy-chart');
   const empty = document.getElementById('hevy-empty');
   chart.innerHTML = '';
-  const entries = Object.entries(weeklyLoad).sort((a, b) => b[1] - a[1]);
+  const entries = Object.entries(muscleGroups).sort((a, b) => b[1] - a[1]);
   if (entries.length === 0) {
     empty.hidden = false;
     return;
   }
   empty.hidden = true;
-  const max = Math.max(...entries.map(([, v]) => v), 1);
-  for (const [group, vol] of entries) {
+  const max = Math.max(...entries.map(([, sets]) => sets), 1);
+  for (const [group, sets] of entries) {
     const row = document.createElement('div');
     row.className = 'hevy-bar-row';
 
@@ -697,12 +707,12 @@ function renderHevyChart(weeklyLoad) {
     track.className = 'hevy-bar-track';
     const fill = document.createElement('div');
     fill.className = 'hevy-bar-fill';
-    fill.style.width = Math.max(4, Math.round((vol / max) * 100)) + '%';
+    fill.style.width = Math.max(4, Math.round((sets / max) * 100)) + '%';
     track.appendChild(fill);
 
     const value = document.createElement('span');
     value.className = 'hevy-bar-value';
-    value.textContent = `${vol.toLocaleString('no-NO')} kg`;
+    value.textContent = fmtSets(sets);
 
     row.append(label, track, value);
     chart.appendChild(row);

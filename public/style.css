@@ -750,7 +750,7 @@ button.ghost:hover { color: var(--text); border-color: var(--muted); }
 
 .hevy-bar-row {
   display: grid;
-  grid-template-columns: 110px 1fr 70px;
+  grid-template-columns: 110px 1fr 64px;
   align-items: center;
   gap: 12px;
 }
@@ -778,14 +778,14 @@ button.ghost:hover { color: var(--text); border-color: var(--muted); }
 
 .hevy-bar-value {
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text);
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 560px) {
-  .hevy-bar-row { grid-template-columns: 86px 1fr 60px; gap: 8px; }
+  .hevy-bar-row { grid-template-columns: 86px 1fr 56px; gap: 8px; }
 }
 
 .upcoming-list {
