@@ -711,6 +711,13 @@ button.ghost:hover { color: var(--text); border-color: var(--muted); }
 
 .calendar-card { margin-bottom: 18px; }
 
+.yesterday-card {
+  margin-bottom: 18px;
+  border-left: 4px solid var(--amber);
+}
+
+.yesterday-card h2::before { background: var(--amber); }
+
 .calendar-hevy-row {
   display: flex;
   gap: 8px;

@@ -379,9 +379,13 @@ function render() {
   document.getElementById('longest-streak').textContent =
     state.profile.longestStreak > 0 ? `(rekord: ${state.profile.longestStreak})` : '';
 
-  // Today
+  // Yesterday (sen avslutning / avkrysning etter midnatt)
+  renderYesterday();
+
+  // Today - avsluttet dag kan fortsatt krysses av (XP justeres), men ikke
+  // endres på ellers.
   document.getElementById('today-date').textContent = fmtDate(state.today.date);
-  renderTaskList('today-tasks', state.today.tasks, state.today.date, !!state.today.reflection);
+  renderTaskList('today-tasks', state.today.tasks, state.today.date, false, !!state.today.reflection);
   document.getElementById('today-empty').hidden = state.today.tasks.length !== 0;
   document.getElementById('add-today-task-form').hidden = !!state.today.reflection;
 
@@ -457,11 +461,77 @@ function renderUpcoming() {
   }
 }
 
-function renderTaskList(elId, tasks, date, locked) {
-  populateTaskList(document.getElementById(elId), tasks, date, locked);
+let yesterdayRating = 0;
+
+function renderYesterday() {
+  const card = document.getElementById('yesterday-card');
+  const y = state.yesterday;
+  if (!y) {
+    card.hidden = true;
+    return;
+  }
+  card.hidden = false;
+  document.getElementById('yesterday-date').textContent = fmtDate(y.date);
+  renderTaskList('yesterday-tasks', y.tasks, y.date, false, true);
+
+  const hint = document.getElementById('yesterday-hint');
+  const closedBox = document.getElementById('yesterday-closed');
+  const form = document.getElementById('yesterday-form');
+  if (y.reflection) {
+    hint.textContent = 'Dagen er avsluttet, men du kan fortsatt krysse av det du fikk gjort – XP-en justeres.';
+    closedBox.hidden = false;
+    closedBox.innerHTML = `Avsluttet <span class="rating-num">${y.reflection.rating}/10</span> · <span class="xp-gain">+${y.reflection.xpAwarded} XP</span>`;
+    form.hidden = true;
+  } else {
+    hint.textContent = 'Ble ikke avsluttet. Kryss av det du fikk gjort og avslutt dagen – du får full XP og streak, og trekket for dagen gis tilbake.';
+    closedBox.hidden = true;
+    form.hidden = false;
+  }
 }
 
-function populateTaskList(ul, tasks, date, locked) {
+document.getElementById('yesterday-stars').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  yesterdayRating = Number(btn.dataset.value);
+  document.querySelectorAll('#yesterday-stars button').forEach((b) => {
+    b.classList.toggle('active', Number(b.dataset.value) <= yesterdayRating);
+  });
+});
+
+document.getElementById('submit-yesterday').addEventListener('click', async () => {
+  if (!state.yesterday) return;
+  if (!yesterdayRating) {
+    showToast('Velg en vurdering fra 1-10 stjerner først.');
+    return;
+  }
+  const notes = document.getElementById('yesterday-notes').value;
+  try {
+    const res = await api('/api/reflection', {
+      method: 'POST',
+      body: JSON.stringify({ rating: yesterdayRating, notes, date: state.yesterday.date }),
+    });
+    setState(res);
+    yesterdayRating = 0;
+    document.getElementById('yesterday-notes').value = '';
+    document.querySelectorAll('#yesterday-stars button').forEach((b) => b.classList.remove('active'));
+    render();
+    const lr = res.lastReflection;
+    let msg = `+${lr.xpAwarded} XP for i går! Streak: ${lr.streak} 🔥`;
+    if (lr.penaltyRefunded) msg += ` (+${lr.penaltyRefunded} XP tilbake)`;
+    if (lr.leveledUp) msg = `🎉 Nivå opp! Nå nivå ${lr.newLevel}. ` + msg;
+    showToast(msg, 6000);
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+function renderTaskList(elId, tasks, date, locked, checkOnly = false) {
+  populateTaskList(document.getElementById(elId), tasks, date, locked, checkOnly);
+}
+
+// locked: helt låst (ingen avkrysning). checkOnly: kan krysses av, men ikke
+// flyttes eller slettes (brukes for avsluttede dager og "I går").
+function populateTaskList(ul, tasks, date, locked, checkOnly = false) {
   ul.innerHTML = '';
   tasks.forEach((t, i) => {
     const li = document.createElement('li');
@@ -476,7 +546,7 @@ function populateTaskList(ul, tasks, date, locked) {
     span.textContent = t.title;
     li.appendChild(cb);
     li.appendChild(span);
-    if (!locked) {
+    if (!locked && !checkOnly) {
       const moveBox = document.createElement('span');
       moveBox.className = 'move-buttons';
 
