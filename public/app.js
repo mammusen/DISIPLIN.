@@ -533,6 +533,24 @@ function renderHistory() {
 
 let openWeeks = new Set();
 
+// Legger `n` dager til en YYYY-MM-DD-streng, kalenderdato-trygt (ingen
+// tidssone-glidning siden vi kun regner med datokomponentene).
+function addDaysLocal(dateStr, n) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + n);
+  return dt.toISOString().slice(0, 10);
+}
+
+// Terskel-klasse for vurdering (gjenbrukes på både ukesnittet og
+// enkeltdager) - samme fargespråk som "siste 14 dager"-rutenettet.
+function ratingTierClass(rating) {
+  if (rating == null) return '';
+  if (rating >= 7) return 'tier-high';
+  if (rating >= 4) return 'tier-mid';
+  return 'tier-low';
+}
+
 function renderWeekList() {
   const container = document.getElementById('week-list');
   const empty = document.getElementById('week-list-empty');
@@ -568,10 +586,10 @@ function renderWeekList() {
     title.textContent = `Uke ${week.isoWeek}`;
 
     const avg = document.createElement('span');
-    avg.className = 'week-avg';
+    avg.className = 'week-avg ' + ratingTierClass(week.avgRating);
     const dayWord = week.days.length === 1 ? 'dag' : 'dager';
     avg.textContent = week.avgRating != null
-      ? `⭐ ${week.avgRating}/10 snitt · ${week.days.length} ${dayWord}`
+      ? `⭐ ${week.avgRating}/10 · ${week.days.length} ${dayWord}`
       : `${week.days.length} ${dayWord}`;
 
     header.append(chevron, title, avg);
@@ -580,6 +598,28 @@ function renderWeekList() {
       else openWeeks.add(week.weekStart);
       renderWeekList();
     });
+
+    // Mini ukeglimt - 7 prikker (man-søn), alltid synlig selv når fanen er
+    // lukket, så man ser formen på uken uten å måtte åpne den.
+    const preview = document.createElement('div');
+    preview.className = 'week-preview';
+    for (let i = 0; i < 7; i += 1) {
+      const dotDate = addDaysLocal(week.weekStart, i);
+      const match = week.days.find((d) => d.date === dotDate);
+      const dot = document.createElement('span');
+      dot.className = 'week-dot';
+      if (match && match.rating != null) {
+        dot.classList.add('closed', ratingTierClass(match.rating));
+        dot.style.opacity = (0.4 + (match.rating / 10) * 0.6).toFixed(2);
+        dot.title = `${fmtDate(dotDate)} · ${match.rating}/10 ★`;
+      } else if (match && match.tasks.length > 0) {
+        dot.classList.add('open');
+        dot.title = `${fmtDate(dotDate)} · ikke avsluttet`;
+      } else {
+        dot.title = fmtDate(dotDate);
+      }
+      preview.appendChild(dot);
+    }
 
     const daysBox = document.createElement('div');
     daysBox.className = 'week-days';
@@ -596,7 +636,7 @@ function renderWeekList() {
       head.appendChild(dateSpan);
       if (day.rating != null) {
         const ratingSpan = document.createElement('span');
-        ratingSpan.className = 'day-rating';
+        ratingSpan.className = 'day-rating ' + ratingTierClass(day.rating);
         ratingSpan.textContent = `${day.rating}/10 ★`;
         head.appendChild(ratingSpan);
       }
@@ -624,7 +664,7 @@ function renderWeekList() {
       daysBox.appendChild(entry);
     }
 
-    tab.append(header, daysBox);
+    tab.append(header, preview, daysBox);
     container.appendChild(tab);
   });
 
