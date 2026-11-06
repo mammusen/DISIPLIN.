@@ -102,6 +102,33 @@
       </div>
     </section>
 
+    <section class="card yesterday-card" id="yesterday-card" hidden>
+      <h2>I går <span class="date-pill" id="yesterday-date"></span></h2>
+      <p class="hint" id="yesterday-hint"></p>
+      <ul class="task-list" id="yesterday-tasks"></ul>
+
+      <div id="yesterday-closed" class="reflection-summary" hidden></div>
+
+      <div id="yesterday-form" class="reflection-form" hidden>
+        <h3>Avslutt gårsdagen</h3>
+        <p class="hint">Hvor godt fulgte du planen i går?</p>
+        <div class="stars" id="yesterday-stars">
+          <button data-value="1">★</button>
+          <button data-value="2">★</button>
+          <button data-value="3">★</button>
+          <button data-value="4">★</button>
+          <button data-value="5">★</button>
+          <button data-value="6">★</button>
+          <button data-value="7">★</button>
+          <button data-value="8">★</button>
+          <button data-value="9">★</button>
+          <button data-value="10">★</button>
+        </div>
+        <textarea id="yesterday-notes" placeholder="Noen tanker om gårsdagen? (valgfritt)"></textarea>
+        <button class="primary" id="submit-yesterday">Avslutt i går</button>
+      </div>
+    </section>
+
     <main class="columns">
       <section class="card">
         <h2>I dag <span class="date-pill" id="today-date"></span></h2>

@@ -7,7 +7,16 @@ const crypto = require('crypto');
 const db = require('./lib/db');
 const auth = require('./lib/auth');
 const { todayStr, tomorrow, yesterday, daysBetween, addDays, weekStartStr, isoWeekNumber } = require('./lib/dates');
-const { levelInfo, petStage, petMood, computeDayClose, applyInactivityPenalty } = require('./lib/gamification');
+const {
+  levelInfo,
+  petStage,
+  petMood,
+  computeDayClose,
+  applyInactivityPenalty,
+  refundInactivityPenalty,
+  adjustClosedDayTaskXp,
+  streakEndingAt,
+} = require('./lib/gamification');
 const { THEME_KEYS } = require('./lib/themes');
 const hevy = require('./lib/hevy');
 
@@ -210,6 +219,15 @@ async function publicState(userId, username, theme) {
   const todayDay = data.days[today] || { plannedDate: null, tasks: [], reflection: null };
   const tomorrowDay = data.days[tmrw] || { plannedDate: null, tasks: [], reflection: null };
 
+  // "I går"-kortet: vises når gårsdagen hadde oppgaver og enten ikke ble
+  // avsluttet, eller fortsatt har oppgaver som ikke er krysset av.
+  const yDate = yesterday(today);
+  const yDay = data.days[yDate];
+  const yesterdayCard =
+    yDay && yDay.tasks.length > 0 && (!yDay.reflection || yDay.tasks.some((t) => !t.done))
+      ? { date: yDate, tasks: yDay.tasks, reflection: yDay.reflection || null }
+      : null;
+
   const h = getHevy(data);
   const thisWeekStart = weekStartStr(today);
 
@@ -224,6 +242,7 @@ async function publicState(userId, username, theme) {
       pet: { ...stage, mood },
     },
     today: { date: today, tasks: todayDay.tasks, reflection: todayDay.reflection },
+    yesterday: yesterdayCard,
     tomorrow: { date: tmrw, tasks: tomorrowDay.tasks },
     history: historySlice(data),
     weekly: weeklyOverview(data),
@@ -415,7 +434,19 @@ async function handlePatchTask(req, res, user, date, taskId) {
   if (!day) return sendJson(res, 404, { error: 'Fant ikke dagen' });
   const task = day.tasks.find((t) => t.id === taskId);
   if (!task) return sendJson(res, 404, { error: 'Fant ikke oppgaven' });
-  task.done = !!body.done;
+  if (day.reflection) {
+    // En avsluttet dag kan fortsatt krysses av for i dag og i går - XP-en
+    // for oppgavene justeres da etter. Eldre dager er låst.
+    const today = todayStr();
+    if (date !== today && date !== yesterday(today)) {
+      return sendJson(res, 400, { error: 'Dagen er avsluttet' });
+    }
+    const tasksBefore = day.tasks.map((t) => ({ ...t }));
+    task.done = !!body.done;
+    adjustClosedDayTaskXp(data, day, tasksBefore);
+  } else {
+    task.done = !!body.done;
+  }
   await db.saveState(user.id, data);
   sendJson(res, 200, await publicState(user.id, user.username, user.theme));
 }
@@ -458,14 +489,21 @@ async function handleReflection(req, res, user) {
   }
   const data = await db.loadState(user.id);
   const today = todayStr();
-  const day = db.getDay(data, today);
+  // Standard er i dag, men gårsdagen kan også avsluttes i etterkant.
+  const date = body.date || today;
+  if (date !== today && date !== yesterday(today)) {
+    return sendJson(res, 400, { error: 'Bare i dag og i går kan avsluttes' });
+  }
+  const isLate = date !== today;
+  const day = db.getDay(data, date);
   if (day.reflection) {
     return sendJson(res, 400, { error: 'Dagen er allerede avsluttet' });
   }
 
-  const plannedOnTime = day.plannedDate === yesterday(today);
-  const streakBefore = data.profile.streak;
-  const streakContinues = data.profile.lastClosedDate === yesterday(today);
+  const plannedOnTime = day.plannedDate === yesterday(date);
+  // For i dag: samme regel som før. For en sent avsluttet gårsdag: streaken
+  // slik den faktisk sto dagen før.
+  const streakBefore = isLate ? streakEndingAt(data, yesterday(date)) : data.profile.streak;
   const result = computeDayClose({
     tasks: day.tasks,
     rating: r,
@@ -481,14 +519,20 @@ async function handleReflection(req, res, user) {
     plannedOnTime,
     breakdown: result.breakdown,
   };
+  if (isLate) day.reflection.closedLate = true;
 
   const beforeLevel = levelInfo(data.profile.totalXp).level;
   data.profile.totalXp += result.xp;
+  const refunded = isLate ? refundInactivityPenalty(data, date) : 0;
   const afterLevel = levelInfo(data.profile.totalXp).level;
 
-  data.profile.streak = streakContinues ? streakBefore + 1 : 1;
+  // Streaken regnes fra den siste avsluttede dagen og bakover, så det blir
+  // riktig uansett om gårsdagen avsluttes før eller etter dagens.
+  if (!data.profile.lastClosedDate || date > data.profile.lastClosedDate) {
+    data.profile.lastClosedDate = date;
+  }
+  data.profile.streak = streakEndingAt(data, data.profile.lastClosedDate);
   data.profile.longestStreak = Math.max(data.profile.longestStreak, data.profile.streak);
-  data.profile.lastClosedDate = today;
 
   await db.saveState(user.id, data);
 
@@ -501,6 +545,9 @@ async function handleReflection(req, res, user) {
       newLevel: afterLevel,
       streak: data.profile.streak,
       plannedOnTime,
+      date,
+      closedLate: isLate,
+      penaltyRefunded: refunded,
     },
   });
 }
