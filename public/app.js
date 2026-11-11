@@ -413,11 +413,8 @@ function render() {
   renderTaskList('tomorrow-tasks', state.tomorrow.tasks, state.tomorrow.date, false);
   document.getElementById('tomorrow-empty').hidden = state.tomorrow.tasks.length !== 0;
 
-  // Kalender / kommende planer
-  const calDate = document.getElementById('new-calendar-task-date');
-  if (!calDate.value) calDate.value = addDaysClient(state.tomorrow.date, 1);
-  calDate.min = addDaysClient(state.tomorrow.date, 1);
-  renderUpcoming();
+  // Kalender
+  renderCalendar();
 
   // Ukas mål
   renderGoals();
@@ -430,39 +427,198 @@ function render() {
   renderHevy();
 }
 
-function addDaysClient(dateStr, n) {
-  const d = new Date(dateStr + 'T00:00:00');
-  d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
+// --- Kalender (månedsrutenett) ----------------------------------------
+
+let calMonth = null; // 'YYYY-MM' som vises
+let calSelected = null; // valgt dato (YYYY-MM-DD)
+const CAL_MAX_ITEMS = 2; // oppgavetitler per rute før "+N"
+const CAL_MAX_DOTS = 4;
+
+function isoWeekOf(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  const dayNum = (date.getUTCDay() + 6) % 7;
+  date.setUTCDate(date.getUTCDate() - dayNum + 3); // torsdag i samme uke
+  const firstThursday = new Date(Date.UTC(date.getUTCFullYear(), 0, 4));
+  const firstDayNum = (firstThursday.getUTCDay() + 6) % 7;
+  firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDayNum + 3);
+  return 1 + Math.round((date - firstThursday) / (7 * 86400000));
 }
 
-function renderUpcoming() {
-  const container = document.getElementById('upcoming-list');
-  const empty = document.getElementById('upcoming-empty');
-  const days = (state.upcoming) || [];
-  container.innerHTML = '';
-  if (days.length === 0) {
-    empty.hidden = false;
-    return;
-  }
-  empty.hidden = true;
-  for (const day of days) {
-    const box = document.createElement('div');
-    box.className = 'upcoming-day';
-
-    const head = document.createElement('div');
-    head.className = 'upcoming-day-head';
-    head.textContent = fmtDate(day.date);
-    box.appendChild(head);
-
-    const ul = document.createElement('ul');
-    ul.className = 'task-list';
-    populateTaskList(ul, day.tasks, day.date, false);
-    box.appendChild(ul);
-
-    container.appendChild(box);
-  }
+function shiftMonth(ym, n) {
+  const [y, m] = ym.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1 + n, 1)).toISOString().slice(0, 7);
 }
+
+function daysFromTo(a, b) {
+  const [ay, am, ad] = a.split('-').map(Number);
+  const [by, bm, bd] = b.split('-').map(Number);
+  return Math.round((Date.UTC(by, bm - 1, bd) - Date.UTC(ay, am - 1, ad)) / 86400000);
+}
+
+function renderCalendar() {
+  const cal = state.calendar;
+  if (!cal) return;
+  const today = state.today.date;
+  if (!calSelected) calSelected = today;
+  if (!calMonth) calMonth = calSelected.slice(0, 7);
+
+  const [y, m] = calMonth.split('-').map(Number);
+  document.getElementById('cal-month').textContent = new Date(Date.UTC(y, m - 1, 1))
+    .toLocaleDateString('no-NO', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  document.getElementById('cal-prev').disabled = calMonth <= cal.minMonth;
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+
+  const corner = document.createElement('span');
+  corner.className = 'cal-head cal-head-week';
+  corner.textContent = 'Uke';
+  grid.appendChild(corner);
+  WEEKDAY_SHORT.forEach((name) => {
+    const h = document.createElement('span');
+    h.className = 'cal-head';
+    h.textContent = name;
+    grid.appendChild(h);
+  });
+
+  const firstDow = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7; // mandag = 0
+  const lastOfMonth = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+  let cursor = addDaysLocal(`${calMonth}-01`, -firstDow);
+  while (cursor <= lastOfMonth) {
+    const wk = document.createElement('span');
+    wk.className = 'cal-week';
+    wk.textContent = isoWeekOf(cursor);
+    grid.appendChild(wk);
+    for (let i = 0; i < 7; i += 1) {
+      grid.appendChild(buildCalCell(addDaysLocal(cursor, i), cal, today));
+    }
+    cursor = addDaysLocal(cursor, 7);
+  }
+
+  renderCalSide(cal, today);
+}
+
+function buildCalCell(date, cal, today) {
+  const info = cal.days[date];
+  const tasks = info ? info.tasks.filter((t) => !t.goalId) : [];
+
+  const cell = document.createElement('button');
+  cell.type = 'button';
+  let cls = 'cal-cell';
+  if (date.slice(0, 7) !== calMonth) cls += ' other-month';
+  if (date === today) cls += ' is-today';
+  if (date < today) cls += ' past';
+  if (date === calSelected) cls += ' selected';
+  if (info && info.closed) cls += ' closed ' + ratingTierClass(info.rating);
+  cell.className = cls;
+  cell.setAttribute(
+    'aria-label',
+    fmtDate(date) + (tasks.length ? `, ${tasks.length} ${tasks.length === 1 ? 'oppgave' : 'oppgaver'}` : '')
+  );
+  if (date === calSelected) cell.setAttribute('aria-current', 'date');
+
+  const top = document.createElement('span');
+  top.className = 'cal-top';
+  const num = document.createElement('span');
+  num.className = 'cal-num';
+  num.textContent = Number(date.slice(8));
+  top.appendChild(num);
+  if (info && info.closed) {
+    const r = document.createElement('span');
+    r.className = 'cal-rating';
+    r.textContent = `${info.rating}★`;
+    top.appendChild(r);
+  }
+  cell.appendChild(top);
+
+  // Bred skjerm: de første titlene. Smal skjerm: prikker (styres i CSS).
+  const items = document.createElement('span');
+  items.className = 'cal-items';
+  tasks.slice(0, CAL_MAX_ITEMS).forEach((t) => {
+    const it = document.createElement('span');
+    it.className = 'cal-item' + (t.done ? ' done' : '');
+    it.textContent = t.title;
+    items.appendChild(it);
+  });
+  if (tasks.length > CAL_MAX_ITEMS) {
+    const more = document.createElement('span');
+    more.className = 'cal-more';
+    more.textContent = `+${tasks.length - CAL_MAX_ITEMS} til`;
+    items.appendChild(more);
+  }
+  cell.appendChild(items);
+
+  const dots = document.createElement('span');
+  dots.className = 'cal-dots';
+  tasks.slice(0, CAL_MAX_DOTS).forEach((t) => {
+    const dot = document.createElement('span');
+    dot.className = 'cal-dot' + (t.done ? ' done' : '');
+    dots.appendChild(dot);
+  });
+  cell.appendChild(dots);
+
+  cell.addEventListener('click', () => selectCalDay(date));
+  return cell;
+}
+
+function selectCalDay(date) {
+  calSelected = date;
+  const month = date.slice(0, 7);
+  if (state.calendar && month >= state.calendar.minMonth) calMonth = month;
+  renderCalendar();
+}
+
+function renderCalSide(cal, today) {
+  const date = calSelected;
+  const info = cal.days[date] || { tasks: [], closed: false, rating: null };
+  const isPast = date < today;
+
+  document.getElementById('cal-side-title').textContent = new Date(date + 'T00:00:00')
+    .toLocaleDateString('no-NO', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  const diff = daysFromTo(today, date);
+  let status;
+  if (diff === 0) status = 'I dag';
+  else if (diff === 1) status = 'I morgen';
+  else if (diff === -1) status = 'I går';
+  else if (diff > 1) status = `Om ${diff} dager`;
+  else status = `For ${-diff} dager siden`;
+  if (info.closed) status += ` · avsluttet ${info.rating}/10 ★`;
+  else if (isPast && info.tasks.length > 0) status += ' · ikke avsluttet';
+  document.getElementById('cal-side-status').textContent = status;
+
+  // Nye oppgaver kan bare legges på i dag og fremover, og ikke på en
+  // avsluttet dag.
+  document.getElementById('cal-add').hidden = isPast || info.closed;
+
+  // Eldre dager enn i går er låst; i går og avsluttede dager kan bare krysses av.
+  const locked = diff < -1;
+  populateTaskList(document.getElementById('cal-day-tasks'), info.tasks, date, locked, isPast || info.closed);
+
+  const empty = document.getElementById('cal-day-empty');
+  empty.hidden = info.tasks.length > 0;
+  empty.textContent = isPast ? 'Ingen oppgaver denne dagen.' : 'Ingen planer denne dagen enda.';
+}
+
+document.getElementById('cal-prev').addEventListener('click', () => {
+  if (!state || !state.calendar || calMonth <= state.calendar.minMonth) return;
+  calMonth = shiftMonth(calMonth, -1);
+  renderCalendar();
+});
+
+document.getElementById('cal-next').addEventListener('click', () => {
+  if (!state || !calMonth) return;
+  calMonth = shiftMonth(calMonth, 1);
+  renderCalendar();
+});
+
+document.getElementById('cal-today').addEventListener('click', () => {
+  if (!state) return;
+  calSelected = state.today.date;
+  calMonth = calSelected.slice(0, 7);
+  renderCalendar();
+});
 
 let yesterdayRating = 0;
 
@@ -878,10 +1034,16 @@ function ratingTierClass(rating) {
   return 'tier-low';
 }
 
+function fmtDayShort(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('no-NO', { weekday: 'short', day: 'numeric' });
+}
+
 function renderWeekList() {
   const container = document.getElementById('week-list');
   const empty = document.getElementById('week-list-empty');
   const weeks = (state.weekly && state.weekly.weeks) || [];
+  const today = state.today.date;
   container.innerHTML = '';
 
   if (weeks.length === 0) {
@@ -896,6 +1058,8 @@ function renderWeekList() {
       openWeeks.add(week.weekStart);
     }
     const isOpen = openWeeks.has(week.weekStart);
+    const byDate = new Map(week.days.map((d) => [d.date, d]));
+    const weekDates = Array.from({ length: 7 }, (_, i) => addDaysLocal(week.weekStart, i));
 
     const tab = document.createElement('div');
     tab.className = 'week-tab' + (isOpen ? ' open' : '');
@@ -903,6 +1067,7 @@ function renderWeekList() {
     const header = document.createElement('button');
     header.type = 'button';
     header.className = 'week-header';
+    header.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
 
     const chevron = document.createElement('span');
     chevron.className = 'week-chevron';
@@ -912,6 +1077,21 @@ function renderWeekList() {
     title.className = 'week-title';
     title.textContent = `Uke ${week.isoWeek}`;
 
+    const range = document.createElement('span');
+    range.className = 'week-range';
+    range.textContent = `${fmtShortDate(weekDates[0])} – ${fmtShortDate(weekDates[6])}`;
+
+    // Vanlige oppgaver (ukemål telles for seg) fullført denne uka.
+    const regular = week.days.flatMap((d) => d.tasks.filter((t) => !t.goal));
+    const stat = document.createElement('span');
+    stat.className = 'week-stat';
+    if (regular.length > 0) {
+      stat.textContent = `✓ ${regular.filter((t) => t.done).length}/${regular.length}`;
+      stat.title = 'Fullførte oppgaver denne uka';
+    } else {
+      stat.hidden = true;
+    }
+
     const avg = document.createElement('span');
     avg.className = 'week-avg ' + ratingTierClass(week.avgRating);
     const dayWord = week.days.length === 1 ? 'dag' : 'dager';
@@ -919,20 +1099,19 @@ function renderWeekList() {
       ? `⭐ ${week.avgRating}/10 · ${week.days.length} ${dayWord}`
       : `${week.days.length} ${dayWord}`;
 
-    header.append(chevron, title, avg);
+    header.append(chevron, title, range, stat, avg);
     header.addEventListener('click', () => {
       if (openWeeks.has(week.weekStart)) openWeeks.delete(week.weekStart);
       else openWeeks.add(week.weekStart);
       renderWeekList();
     });
 
-    // Mini ukeglimt - 7 prikker (man-søn), alltid synlig selv når fanen er
-    // lukket, så man ser formen på uken uten å måtte åpne den.
+    // Mini ukeglimt - 7 prikker (man-søn) som vises når uka er lukket, så
+    // man ser formen på uken uten å måtte åpne den.
     const preview = document.createElement('div');
     preview.className = 'week-preview';
-    for (let i = 0; i < 7; i += 1) {
-      const dotDate = addDaysLocal(week.weekStart, i);
-      const match = week.days.find((d) => d.date === dotDate);
+    for (const dotDate of weekDates) {
+      const match = byDate.get(dotDate);
       const dot = document.createElement('span');
       dot.className = 'week-dot';
       if (match && match.rating != null) {
@@ -948,49 +1127,72 @@ function renderWeekList() {
       preview.appendChild(dot);
     }
 
+    // Åpen uke: én kolonne per dag (man-søn) på bred skjerm, og en liste
+    // med bare dagene som har innhold på smal skjerm (styres i CSS).
     const daysBox = document.createElement('div');
     daysBox.className = 'week-days';
+    const grid = document.createElement('div');
+    grid.className = 'week-grid';
 
-    for (const day of week.days) {
-      const entry = document.createElement('div');
-      entry.className = 'day-entry';
+    for (const date of weekDates) {
+      const day = byDate.get(date);
+      const col = document.createElement('div');
+      let cls = 'week-col';
+      if (!day) cls += ' empty';
+      if (date === today) cls += ' is-today';
+      if (day && day.rating != null) cls += ' ' + ratingTierClass(day.rating);
+      col.className = cls;
 
       const head = document.createElement('div');
-      head.className = 'day-entry-head';
+      head.className = 'week-col-head';
       const dateSpan = document.createElement('span');
       dateSpan.className = 'day-date';
-      dateSpan.textContent = fmtDate(day.date);
+      dateSpan.textContent = fmtDayShort(date);
       head.appendChild(dateSpan);
-      if (day.rating != null) {
+      if (day && day.rating != null) {
         const ratingSpan = document.createElement('span');
         ratingSpan.className = 'day-rating ' + ratingTierClass(day.rating);
-        ratingSpan.textContent = `${day.rating}/10 ★`;
+        ratingSpan.textContent = `${day.rating}★`;
+        ratingSpan.title = `${day.rating}/10`;
         head.appendChild(ratingSpan);
       }
-      entry.appendChild(head);
+      col.appendChild(head);
 
-      if (day.tasks.length > 0) {
-        const ul = document.createElement('ul');
-        ul.className = 'day-checklist';
-        for (const t of day.tasks) {
-          const li = document.createElement('li');
-          li.className = t.done ? 'done' : '';
-          li.textContent = t.title;
-          ul.appendChild(li);
+      if (day) {
+        const tasks = day.tasks.filter((t) => !t.goal);
+        const goalTasks = day.tasks.filter((t) => t.goal);
+        if (tasks.length > 0) {
+          const ul = document.createElement('ul');
+          ul.className = 'day-checklist';
+          for (const t of tasks) {
+            const li = document.createElement('li');
+            li.className = t.done ? 'done' : '';
+            li.textContent = t.title;
+            ul.appendChild(li);
+          }
+          col.appendChild(ul);
         }
-        entry.appendChild(ul);
+        if (goalTasks.length > 0) {
+          const pill = document.createElement('span');
+          const doneGoals = goalTasks.filter((t) => t.done).length;
+          pill.className = 'day-goals' + (doneGoals === goalTasks.length ? ' all' : '');
+          pill.textContent = `🔁 Ukemål ${doneGoals}/${goalTasks.length}`;
+          pill.title = goalTasks.map((t) => `${t.done ? '✓' : '○'} ${t.title}`).join('\n');
+          col.appendChild(pill);
+        }
+        if (day.notes) {
+          const p = document.createElement('p');
+          p.className = 'day-notes';
+          p.textContent = `"${day.notes}"`;
+          p.title = day.notes;
+          col.appendChild(p);
+        }
       }
 
-      if (day.notes) {
-        const p = document.createElement('p');
-        p.className = 'day-notes';
-        p.textContent = `"${day.notes}"`;
-        entry.appendChild(p);
-      }
-
-      daysBox.appendChild(entry);
+      grid.appendChild(col);
     }
 
+    daysBox.appendChild(grid);
     tab.append(header, preview, daysBox);
     container.appendChild(tab);
   });
@@ -1265,21 +1467,20 @@ document.getElementById('add-task-form').addEventListener('submit', async (e) =>
 
 document.getElementById('add-calendar-task-form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const dateInput = document.getElementById('new-calendar-task-date');
   const titleInput = document.getElementById('new-calendar-task-title');
-  const date = dateInput.value;
   const title = titleInput.value.trim();
-  if (!date) {
-    showToast('Velg en dato først.');
+  if (!title || !calSelected) return;
+  if (calSelected < state.today.date) {
+    showToast('Du kan ikke planlegge bakover i tid.');
     return;
   }
-  if (!title) return;
   try {
     setState(await api('/api/tasks', {
       method: 'POST',
-      body: JSON.stringify({ date, title }),
+      body: JSON.stringify({ date: calSelected, title }),
     }));
     titleInput.value = '';
+    document.getElementById('hevy-routine-select').value = '';
     render();
   } catch (err) {
     showToast(err.message);
