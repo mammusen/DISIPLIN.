@@ -102,6 +102,14 @@
       </div>
     </section>
 
+    <nav class="tabbar" id="tabbar" role="tablist">
+      <button type="button" class="tab active" data-tab="today" role="tab">I dag</button>
+      <button type="button" class="tab" data-tab="week" role="tab">Uka</button>
+      <button type="button" class="tab" data-tab="later" role="tab"><span class="tab-long">Planlegg senere</span><span class="tab-short">Senere</span></button>
+      <button type="button" class="tab" data-tab="progress" role="tab">Fremgang</button>
+    </nav>
+
+    <div class="tab-panel" data-panel="today">
     <section class="card yesterday-card" id="yesterday-card" hidden>
       <h2>I går <span class="date-pill" id="yesterday-date"></span></h2>
       <p class="hint" id="yesterday-hint"></p>
@@ -173,7 +181,44 @@
         <p class="empty-hint" id="tomorrow-empty" hidden>Ingen oppgaver lagt til enda. Dette er ritualet ditt for kvelden!</p>
       </section>
     </main>
+    </div>
 
+    <div class="tab-panel" data-panel="week" hidden>
+    <section class="card goals-card">
+      <h2>Ukas mål <span class="date-pill" id="goals-week-label"></span></h2>
+
+      <div class="goals-progress" id="goals-progress" hidden>
+        <div class="goals-progress-track"><div class="goals-progress-fill" id="goals-progress-fill"></div></div>
+        <span class="goals-progress-label" id="goals-progress-label"></span>
+      </div>
+
+      <form id="add-goal-form" class="goal-form">
+        <input type="text" id="new-goal-title" placeholder="Nytt mål – f.eks. «Kreatin» eller «Drikk 2 liter vann»" maxlength="80" autocomplete="off" />
+        <div class="goal-form-row">
+          <div class="seg" id="goal-kind" role="radiogroup" aria-label="Type mål">
+            <button type="button" class="seg-btn active" data-daily="1" role="radio" aria-checked="true">🔁 Hverdagsmål</button>
+            <button type="button" class="seg-btn" data-daily="0" role="radio" aria-checked="false">🎯 Én gang denne uka</button>
+          </div>
+          <button type="submit" class="primary">Legg til</button>
+        </div>
+        <p class="hint goal-kind-hint" id="goal-kind-hint">Legges automatisk inn i «I dag» hver dag og fortsetter uke etter uke.</p>
+      </form>
+
+      <div class="goals-section" id="goals-daily-section" hidden>
+        <h3 class="goals-subhead">Hverdagsmål</h3>
+        <div class="habit-grid" id="habit-grid"></div>
+      </div>
+
+      <div class="goals-section" id="goals-weekly-section" hidden>
+        <h3 class="goals-subhead">Denne uka</h3>
+        <ul class="task-list" id="weekly-goal-list"></ul>
+      </div>
+
+      <p class="empty-hint" id="goals-empty">Ingen mål enda. Legg til noe du vil holde fast ved – kreatin, vann, søvn, trening …</p>
+    </section>
+    </div>
+
+    <div class="tab-panel" data-panel="later" hidden>
     <section class="card calendar-card">
       <h2>Kalender <span class="date-pill">Planlegg i forveien</span></h2>
       <p class="hint">Legg inn ting flere dager fram i tid – de dukker automatisk opp i "I dag" den dagen det gjelder.</p>
@@ -191,7 +236,9 @@
       <div class="upcoming-list" id="upcoming-list"></div>
       <p class="empty-hint" id="upcoming-empty" hidden>Ingen kommende planer lagt til enda.</p>
     </section>
+    </div>
 
+    <div class="tab-panel" data-panel="progress" hidden>
     <section class="card hevy-card" id="hevy-card">
       <h2>💪 Treningsbelastning <span class="date-pill" id="hevy-week-label">Ikke koblet til</span></h2>
 
@@ -236,6 +283,7 @@
       <ol class="leaderboard-list" id="leaderboard-list"></ol>
       <p class="empty-hint" id="leaderboard-empty" hidden>Ingen andre har blitt med enda.</p>
     </section>
+    </div>
 
     <div id="toast" class="toast" hidden></div>
   </div>
