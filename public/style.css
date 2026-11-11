@@ -718,6 +718,305 @@ button.ghost:hover { color: var(--text); border-color: var(--muted); }
 
 .yesterday-card h2::before { background: var(--amber); }
 
+/* --- Faner --- */
+
+.tabbar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 18px;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+.tab {
+  position: relative;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-family: 'Sora', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 10px 6px;
+  border-radius: 9px;
+  white-space: nowrap;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.tab:hover { color: var(--text); background: var(--hover-bg); }
+
+.tab.active {
+  color: #fff;
+  background: var(--accent);
+  box-shadow: 0 6px 16px -8px var(--accent);
+}
+
+.tab-short { display: none; }
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--amber);
+  color: #1a1206;
+  font-size: 0.7rem;
+  font-weight: 800;
+  vertical-align: 1px;
+}
+
+@media (max-width: 520px) {
+  .tab { font-size: 0.78rem; padding: 9px 2px; }
+  .tab-long { display: none; }
+  .tab-short { display: inline; }
+}
+
+/* --- Ukas mål --- */
+
+.goals-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: -4px 0 16px;
+}
+
+.goals-progress-track {
+  flex: 1;
+  height: 10px;
+  background: var(--well);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.goals-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--mint));
+  transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.goals-progress-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.goal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  margin-bottom: 18px;
+  background: var(--well);
+  border: 1px dashed var(--card-border);
+  border-radius: 10px;
+}
+
+.goal-form-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.goal-form-row .primary { margin-left: auto; }
+
+.goal-kind-hint { margin: 0; font-size: 0.8rem; }
+
+.seg {
+  display: inline-flex;
+  padding: 3px;
+  gap: 3px;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+}
+
+.seg-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 7px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.seg-btn:hover { color: var(--text); }
+
+.seg-btn.active {
+  background: var(--accent-soft);
+  color: var(--accent-2);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.goals-section + .goals-section { margin-top: 20px; }
+
+.goals-subhead {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.habit-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.habit-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(7, 30px) 48px 26px;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--well);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.habit-row:not(.habit-head):hover { border-color: var(--hover-tint); }
+
+.habit-row.habit-head {
+  background: none;
+  border: none;
+  padding: 0 10px;
+}
+
+.habit-row.full-week {
+  border-color: var(--mint-soft-border);
+  box-shadow: 0 0 18px -10px var(--mint);
+}
+
+.habit-day {
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.habit-day.is-today { color: var(--accent-2); }
+
+.habit-name {
+  font-weight: 600;
+  font-size: 0.92rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.habit-box {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid var(--card-border);
+  background: var(--card);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1;
+  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.habit-box:disabled { cursor: default; }
+.habit-box:not(:disabled):hover { transform: scale(1.1); border-color: var(--accent-2); }
+
+.habit-box.done {
+  background: var(--mint);
+  border-color: var(--mint);
+  box-shadow: 0 0 10px -3px var(--mint);
+}
+
+.habit-box.open {
+  border: 2px dashed var(--accent-2);
+  background: var(--accent-soft);
+}
+
+.habit-box.missed {
+  background: var(--danger-soft);
+  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+}
+
+.habit-box.future,
+.habit-box.before {
+  background: none;
+  border-style: dotted;
+  opacity: 0.45;
+}
+
+.habit-box.is-today { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.habit-count {
+  text-align: right;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--text);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.habit-row.full-week .habit-count { color: var(--mint); }
+
+.goal-remove {
+  background: none;
+  border: none;
+  color: var(--muted);
+  padding: 2px;
+  font-size: 0.9rem;
+  opacity: 0.6;
+}
+
+.goal-remove:hover { color: var(--danger); opacity: 1; }
+
+.goal-tag {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--amber);
+  background: color-mix(in srgb, var(--amber) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--amber) 40%, transparent);
+  padding: 2px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+@media (max-width: 560px) {
+  /* Smal skjerm: målnavnet på egen linje over de sju rutene. */
+  .habit-row {
+    grid-template-columns: repeat(7, minmax(0, 1fr)) 40px 20px;
+    gap: 5px;
+    padding: 8px;
+  }
+  .habit-row.habit-head { padding: 0 8px; }
+  .habit-head > span:first-child { display: none; }
+  .habit-name { grid-column: 1 / -1; font-size: 0.88rem; }
+  .habit-box { width: 100%; height: 30px; border-radius: 7px; }
+  .seg { width: 100%; }
+  .seg-btn { flex: 1; padding: 7px 6px; font-size: 0.78rem; }
+  .goal-form-row .primary { width: 100%; }
+}
+
 .calendar-hevy-row {
   display: flex;
   gap: 8px;

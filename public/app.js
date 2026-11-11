@@ -419,6 +419,9 @@ function render() {
   calDate.min = addDaysClient(state.tomorrow.date, 1);
   renderUpcoming();
 
+  // Ukas mål
+  renderGoals();
+
   // History
   renderHistory();
   renderWeekList();
@@ -546,6 +549,15 @@ function populateTaskList(ul, tasks, date, locked, checkOnly = false) {
     span.textContent = t.title;
     li.appendChild(cb);
     li.appendChild(span);
+    if (t.goalId) {
+      // Hverdagsmål fra "Uka" - kan krysses av, men fjernes derfra.
+      li.classList.add('goal-task');
+      const tag = document.createElement('span');
+      tag.className = 'goal-tag';
+      tag.textContent = 'Ukemål';
+      tag.title = 'Hverdagsmål fra «Uka» – endres der';
+      li.appendChild(tag);
+    }
     if (!locked && !checkOnly) {
       const moveBox = document.createElement('span');
       moveBox.className = 'move-buttons';
@@ -569,12 +581,14 @@ function populateTaskList(ul, tasks, date, locked, checkOnly = false) {
       moveBox.append(up, down);
       li.appendChild(moveBox);
 
-      const rm = document.createElement('button');
-      rm.className = 'remove';
-      rm.textContent = '✕';
-      rm.title = 'Fjern';
-      rm.addEventListener('click', () => removeTask(date, t.id));
-      li.appendChild(rm);
+      if (!t.goalId) {
+        const rm = document.createElement('button');
+        rm.className = 'remove';
+        rm.textContent = '✕';
+        rm.title = 'Fjern';
+        rm.addEventListener('click', () => removeTask(date, t.id));
+        li.appendChild(rm);
+      }
     }
     ul.appendChild(li);
   });
@@ -598,6 +612,249 @@ function renderHistory() {
     grid.appendChild(cell);
   }
 }
+
+// --- Faner ------------------------------------------------------------
+
+const TAB_KEY = 'disiplin.tab';
+const TABS = ['today', 'week', 'later', 'progress'];
+
+function showTab(name) {
+  if (!TABS.includes(name)) name = 'today';
+  document.querySelectorAll('#tabbar .tab').forEach((b) => {
+    const on = b.dataset.tab === name;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  document.querySelectorAll('.tab-panel').forEach((p) => {
+    p.hidden = p.dataset.panel !== name;
+  });
+  try {
+    localStorage.setItem(TAB_KEY, name);
+  } catch (e) {
+    // privat modus o.l. - fanevalget huskes bare ikke
+  }
+}
+
+document.getElementById('tabbar').addEventListener('click', (e) => {
+  const btn = e.target.closest('.tab');
+  if (btn) showTab(btn.dataset.tab);
+});
+
+(function restoreTab() {
+  let saved = null;
+  try {
+    saved = localStorage.getItem(TAB_KEY);
+  } catch (e) {
+    saved = null;
+  }
+  showTab(saved || 'today');
+})();
+
+// --- Ukas mål ---------------------------------------------------------
+
+let newGoalDaily = true;
+const WEEKDAY_SHORT = ['Ma', 'Ti', 'On', 'To', 'Fr', 'Lø', 'Sø'];
+const GOAL_KIND_HINT = {
+  daily: 'Legges automatisk inn i «I dag» hver dag og fortsetter uke etter uke.',
+  weekly: 'Krysses av én gang når det er gjort. Gjelder bare denne uka.',
+};
+const HABIT_STATUS_LABEL = {
+  done: 'gjort',
+  open: 'ikke gjort enda – trykk for å krysse av',
+  missed: 'ikke gjort',
+  future: 'kommer',
+  before: 'før målet ble laget',
+};
+
+function fmtShortDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('no-NO', { day: 'numeric', month: 'short' });
+}
+
+function renderGoals() {
+  const wg = state.weekGoals;
+  if (!wg) return;
+  document.getElementById('goals-week-label').textContent =
+    `Uke ${wg.isoWeek} · ${fmtShortDate(wg.dates[0])} – ${fmtShortDate(wg.dates[6])}`;
+
+  const hasDaily = wg.daily.length > 0;
+  const hasWeekly = wg.weekly.length > 0;
+  document.getElementById('goals-daily-section').hidden = !hasDaily;
+  document.getElementById('goals-weekly-section').hidden = !hasWeekly;
+  document.getElementById('goals-empty').hidden = hasDaily || hasWeekly;
+
+  const done = wg.daily.reduce((s, g) => s + g.doneCount, 0) + wg.weekly.filter((g) => g.done).length;
+  const possible = wg.daily.reduce((s, g) => s + g.possible, 0) + wg.weekly.length;
+  const pct = possible ? Math.round((done / possible) * 100) : 0;
+  document.getElementById('goals-progress').hidden = possible === 0;
+  document.getElementById('goals-progress-fill').style.width = pct + '%';
+  document.getElementById('goals-progress-label').textContent = `${done} av ${possible} · ${pct}%`;
+
+  renderHabitGrid(wg);
+  renderWeeklyGoals(wg);
+
+  // Merke på "Uka"-fanen: hvor mange hverdagsmål som gjenstår i dag.
+  const openToday = wg.daily.filter((g) => g.days.some((d) => d.date === wg.today && d.status === 'open')).length;
+  const tab = document.querySelector('#tabbar .tab[data-tab="week"]');
+  let badge = tab.querySelector('.tab-badge');
+  if (openToday > 0) {
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'tab-badge';
+      tab.appendChild(badge);
+    }
+    badge.textContent = openToday;
+    badge.title = `${openToday} hverdagsmål igjen i dag`;
+  } else if (badge) {
+    badge.remove();
+  }
+}
+
+function renderHabitGrid(wg) {
+  const grid = document.getElementById('habit-grid');
+  grid.innerHTML = '';
+
+  const head = document.createElement('div');
+  head.className = 'habit-row habit-head';
+  head.appendChild(document.createElement('span'));
+  wg.dates.forEach((date, i) => {
+    const c = document.createElement('span');
+    c.className = 'habit-day' + (date === wg.today ? ' is-today' : '');
+    c.textContent = WEEKDAY_SHORT[i];
+    head.appendChild(c);
+  });
+  head.appendChild(document.createElement('span'));
+  head.appendChild(document.createElement('span'));
+  grid.appendChild(head);
+
+  for (const g of wg.daily) {
+    const row = document.createElement('div');
+    row.className = 'habit-row' + (g.fullWeek ? ' full-week' : '');
+
+    const name = document.createElement('span');
+    name.className = 'habit-name';
+    name.textContent = g.title;
+    name.title = g.title;
+    row.appendChild(name);
+
+    for (const d of g.days) {
+      const box = document.createElement('button');
+      box.type = 'button';
+      box.className = `habit-box ${d.status}` + (d.date === wg.today ? ' is-today' : '');
+      box.disabled = !d.editable;
+      const label = `${fmtDate(d.date)}: ${HABIT_STATUS_LABEL[d.status]}`;
+      box.title = label;
+      box.setAttribute('aria-label', `${g.title}, ${label}`);
+      if (d.status === 'done') box.textContent = '✓';
+      if (d.editable) box.addEventListener('click', () => toggleHabit(g, d));
+      row.appendChild(box);
+    }
+
+    const count = document.createElement('span');
+    count.className = 'habit-count';
+    count.textContent = g.fullWeek ? '7/7 🔥' : `${g.doneCount}/${g.possible}`;
+    row.appendChild(count);
+
+    const rm = document.createElement('button');
+    rm.type = 'button';
+    rm.className = 'goal-remove';
+    rm.textContent = '✕';
+    rm.title = 'Fjern målet';
+    rm.addEventListener('click', () => deleteGoal(g));
+    row.appendChild(rm);
+
+    grid.appendChild(row);
+  }
+}
+
+function renderWeeklyGoals(wg) {
+  const ul = document.getElementById('weekly-goal-list');
+  ul.innerHTML = '';
+  for (const g of wg.weekly) {
+    const li = document.createElement('li');
+    li.className = 'task-item weekly-goal' + (g.done ? ' done' : '');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = g.done;
+    cb.addEventListener('change', () => toggleWeeklyGoal(g));
+    const span = document.createElement('span');
+    span.className = 'title';
+    span.textContent = g.title;
+    const rm = document.createElement('button');
+    rm.type = 'button';
+    rm.className = 'remove';
+    rm.textContent = '✕';
+    rm.title = 'Fjern målet';
+    rm.addEventListener('click', () => deleteGoal(g));
+    li.append(cb, span, rm);
+    ul.appendChild(li);
+  }
+}
+
+async function toggleHabit(goal, day) {
+  const wasFull = goal.fullWeek;
+  try {
+    setState(await api(`/api/tasks/${day.date}/${day.taskId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ done: day.status !== 'done' }),
+    }));
+    render();
+    const g = state.weekGoals.daily.find((x) => x.id === goal.id);
+    if (g && g.fullWeek && !wasFull) showToast(`🔥 ${g.title}: 7 av 7 dager! +10 XP bonus`);
+  } catch (err) {
+    showToast(err.message);
+  }
+}
+
+async function toggleWeeklyGoal(goal) {
+  try {
+    setState(await api(`/api/goals/${goal.id}/toggle`, { method: 'POST' }));
+    render();
+    if (!goal.done) showToast(`🎯 ${goal.title} – +10 XP`);
+  } catch (err) {
+    showToast(err.message);
+    render();
+  }
+}
+
+async function deleteGoal(goal) {
+  if (!confirm(`Fjerne målet «${goal.title}»?`)) return;
+  try {
+    setState(await api(`/api/goals/${goal.id}`, { method: 'DELETE' }));
+    render();
+  } catch (err) {
+    showToast(err.message);
+  }
+}
+
+document.getElementById('goal-kind').addEventListener('click', (e) => {
+  const btn = e.target.closest('.seg-btn');
+  if (!btn) return;
+  newGoalDaily = btn.dataset.daily === '1';
+  document.querySelectorAll('#goal-kind .seg-btn').forEach((b) => {
+    const on = b === btn;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-checked', on ? 'true' : 'false');
+  });
+  document.getElementById('goal-kind-hint').textContent = newGoalDaily ? GOAL_KIND_HINT.daily : GOAL_KIND_HINT.weekly;
+});
+
+document.getElementById('add-goal-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const input = document.getElementById('new-goal-title');
+  const title = input.value.trim();
+  if (!title) return;
+  try {
+    setState(await api('/api/goals', {
+      method: 'POST',
+      body: JSON.stringify({ title, daily: newGoalDaily }),
+    }));
+    input.value = '';
+    render();
+  } catch (err) {
+    showToast(err.message);
+  }
+});
 
 // --- Uke-oversikt (sidekolonne): uker som faner, dager m/ sjekkliste og vurdering ---
 
