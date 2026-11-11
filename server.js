@@ -19,6 +19,7 @@ const {
 } = require('./lib/gamification');
 const { THEME_KEYS } = require('./lib/themes');
 const hevy = require('./lib/hevy');
+const goals = require('./lib/goals');
 
 const HEVY_SYNC_WEEKS_BACK = 8; // hvor mange uker tilbake vi henter/viser belastning for
 const HEVY_TEMPLATE_CACHE_DAYS = 7; // hvor lenge øvelsesbiblioteket caches før det hentes på nytt
@@ -204,7 +205,9 @@ async function publicState(userId, username, theme) {
   // med en kveldsrefleksjon. Lat evaluering - kjøres her fordi publicState()
   // er siste steg for absolutt alle endepunkter som returnerer tilstand.
   const penalty = applyInactivityPenalty(data, today);
-  if (penalty) {
+  // Hverdagsmål legges inn som oppgaver i i går og i dag.
+  const goalTasksAdded = goals.ensureGoalTasks(data, today);
+  if (penalty || goalTasksAdded) {
     await db.saveState(userId, data);
   }
 
@@ -220,11 +223,14 @@ async function publicState(userId, username, theme) {
   const tomorrowDay = data.days[tmrw] || { plannedDate: null, tasks: [], reflection: null };
 
   // "I går"-kortet: vises når gårsdagen hadde oppgaver og enten ikke ble
-  // avsluttet, eller fortsatt har oppgaver som ikke er krysset av.
+  // avsluttet, eller fortsatt har vanlige oppgaver som ikke er krysset av
+  // (ukemål som mangler kan krysses av fra "Uka"-fanen).
   const yDate = yesterday(today);
   const yDay = data.days[yDate];
   const yesterdayCard =
-    yDay && yDay.tasks.length > 0 && (!yDay.reflection || yDay.tasks.some((t) => !t.done))
+    yDay &&
+    yDay.tasks.length > 0 &&
+    (!yDay.reflection || yDay.tasks.some((t) => !t.done && !t.goalId))
       ? { date: yDate, tasks: yDay.tasks, reflection: yDay.reflection || null }
       : null;
 
@@ -246,6 +252,7 @@ async function publicState(userId, username, theme) {
     tomorrow: { date: tmrw, tasks: tomorrowDay.tasks },
     history: historySlice(data),
     weekly: weeklyOverview(data),
+    weekGoals: goals.buildWeekGoals(data, today),
     upcoming: upcomingList(data, today),
     hevy: {
       connected: !!h.apiKey,
@@ -434,6 +441,18 @@ async function handlePatchTask(req, res, user, date, taskId) {
   if (!day) return sendJson(res, 404, { error: 'Fant ikke dagen' });
   const task = day.tasks.find((t) => t.id === taskId);
   if (!task) return sendJson(res, 404, { error: 'Fant ikke oppgaven' });
+  if (task.goalId) {
+    // Ukemål kan bare krysses av for i dag og i går, og gir XP med en gang.
+    const today = todayStr();
+    if (date !== today && date !== yesterday(today)) {
+      return sendJson(res, 400, { error: 'Ukemål kan bare krysses av for i dag og i går' });
+    }
+    const wasDone = task.done;
+    task.done = !!body.done;
+    goals.applyGoalTickXp(data, task.goalId, date, task.done, wasDone);
+    await db.saveState(user.id, data);
+    return sendJson(res, 200, await publicState(user.id, user.username, user.theme));
+  }
   if (day.reflection) {
     // En avsluttet dag kan fortsatt krysses av for i dag og i går - XP-en
     // for oppgavene justeres da etter. Eldre dager er låst.
@@ -456,6 +475,10 @@ async function handleDeleteTask(req, res, user, date, taskId) {
   const day = data.days[date];
   if (!day) return sendJson(res, 404, { error: 'Fant ikke dagen' });
   if (day.reflection) return sendJson(res, 400, { error: 'Dagen er avsluttet' });
+  const task = day.tasks.find((t) => t.id === taskId);
+  if (task && task.goalId) {
+    return sendJson(res, 400, { error: 'Dette er et ukemål – fjern det under «Uka».' });
+  }
   day.tasks = day.tasks.filter((t) => t.id !== taskId);
   await db.saveState(user.id, data);
   sendJson(res, 200, await publicState(user.id, user.username, user.theme));
@@ -550,6 +573,45 @@ async function handleReflection(req, res, user) {
       penaltyRefunded: refunded,
     },
   });
+}
+
+// --- Ukas mål (krever innlogging) -----------------------------------------
+
+async function handleAddGoal(req, res, user) {
+  const body = await readJsonBody(req);
+  const title = (body.title || '').trim();
+  if (title.length < 1 || title.length > 80) {
+    return sendJson(res, 400, { error: 'Målet må være 1-80 tegn' });
+  }
+  const data = await db.loadState(user.id);
+  if (goals.getGoals(data).length >= goals.MAX_GOALS) {
+    return sendJson(res, 400, { error: `Maks ${goals.MAX_GOALS} mål om gangen` });
+  }
+  goals.createGoal(data, { title, daily: !!body.daily, today: todayStr() });
+  await db.saveState(user.id, data);
+  sendJson(res, 200, await publicState(user.id, user.username, user.theme));
+}
+
+async function handleDeleteGoal(req, res, user, goalId) {
+  const data = await db.loadState(user.id);
+  if (!goals.removeGoal(data, goalId, todayStr())) {
+    return sendJson(res, 404, { error: 'Fant ikke målet' });
+  }
+  await db.saveState(user.id, data);
+  sendJson(res, 200, await publicState(user.id, user.username, user.theme));
+}
+
+async function handleToggleWeeklyGoal(req, res, user, goalId) {
+  const data = await db.loadState(user.id);
+  const goal = goals.getGoals(data).find((g) => g.id === goalId);
+  if (!goal) return sendJson(res, 404, { error: 'Fant ikke målet' });
+  if (goal.daily) return sendJson(res, 400, { error: 'Hverdagsmål krysses av per dag' });
+  if (goal.weekStart !== weekStartStr(todayStr())) {
+    return sendJson(res, 400, { error: 'Målet gjelder en tidligere uke' });
+  }
+  goals.toggleWeeklyGoal(data, goal);
+  await db.saveState(user.id, data);
+  sendJson(res, 200, await publicState(user.id, user.username, user.theme));
 }
 
 // --- Hevy-handlers (krever innlogging) ------------------------------------
@@ -663,6 +725,17 @@ const server = http.createServer(async (req, res) => {
       }
       if (pathname === '/api/reflection' && req.method === 'POST') {
         return await handleReflection(req, res, user);
+      }
+      if (pathname === '/api/goals' && req.method === 'POST') {
+        return await handleAddGoal(req, res, user);
+      }
+      let gm = pathname.match(/^\/api\/goals\/([^/]+)$/);
+      if (gm && req.method === 'DELETE') {
+        return await handleDeleteGoal(req, res, user, decodeURIComponent(gm[1]));
+      }
+      gm = pathname.match(/^\/api\/goals\/([^/]+)\/toggle$/);
+      if (gm && req.method === 'POST') {
+        return await handleToggleWeeklyGoal(req, res, user, decodeURIComponent(gm[1]));
       }
       if (pathname === '/api/hevy/key' && req.method === 'POST') {
         return await handleSetHevyKey(req, res, user);
