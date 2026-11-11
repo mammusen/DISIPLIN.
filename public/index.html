@@ -221,20 +221,36 @@
     <div class="tab-panel" data-panel="later" hidden>
     <section class="card calendar-card">
       <h2>Kalender <span class="date-pill">Planlegg i forveien</span></h2>
-      <p class="hint">Legg inn ting flere dager fram i tid – de dukker automatisk opp i "I dag" den dagen det gjelder.</p>
-      <form id="add-calendar-task-form" class="add-task-form calendar-form">
-        <input type="date" id="new-calendar-task-date" />
-        <input type="text" id="new-calendar-task-title" placeholder="Hva skal skje?" autocomplete="off" />
-        <button type="submit" class="primary">Legg til</button>
-      </form>
-      <div class="calendar-hevy-row" id="calendar-hevy-row" hidden>
-        <select id="hevy-routine-select">
-          <option value="">Velg en Hevy-rutine…</option>
-        </select>
-        <button type="button" class="ghost" id="hevy-routine-refresh">Hent fra Hevy</button>
+      <div class="cal-layout">
+        <div class="cal-main">
+          <div class="cal-nav">
+            <button type="button" class="ghost cal-nav-btn" id="cal-prev" aria-label="Forrige måned">‹</button>
+            <div class="cal-month" id="cal-month" aria-live="polite"></div>
+            <button type="button" class="ghost" id="cal-today">I dag</button>
+            <button type="button" class="ghost cal-nav-btn" id="cal-next" aria-label="Neste måned">›</button>
+          </div>
+          <div class="cal-grid" id="cal-grid"></div>
+        </div>
+
+        <aside class="cal-side">
+          <h3 class="cal-side-title" id="cal-side-title"></h3>
+          <p class="cal-side-status" id="cal-side-status"></p>
+          <div id="cal-add">
+            <form id="add-calendar-task-form" class="add-task-form">
+              <input type="text" id="new-calendar-task-title" placeholder="Hva skal skje?" autocomplete="off" />
+              <button type="submit" class="primary">Legg til</button>
+            </form>
+            <div class="calendar-hevy-row" id="calendar-hevy-row" hidden>
+              <select id="hevy-routine-select">
+                <option value="">Velg en Hevy-rutine…</option>
+              </select>
+              <button type="button" class="ghost" id="hevy-routine-refresh">Hent fra Hevy</button>
+            </div>
+          </div>
+          <ul class="task-list" id="cal-day-tasks"></ul>
+          <p class="empty-hint" id="cal-day-empty" hidden></p>
+        </aside>
       </div>
-      <div class="upcoming-list" id="upcoming-list"></div>
-      <p class="empty-hint" id="upcoming-empty" hidden>Ingen kommende planer lagt til enda.</p>
     </section>
     </div>
 

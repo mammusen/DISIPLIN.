@@ -27,6 +27,7 @@ const HEVY_TEMPLATE_CACHE_DAYS = 7; // hvor lenge øvelsesbiblioteket caches fø
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const PIN_RE = /^\d{4}$/;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -75,12 +76,13 @@ function historySlice(data, days = 14) {
 // som uke-"faner". Nyeste dag/uke først. Sjekklisten (oppgaver) og
 // stjernevurderingen for dagen tas med, samt et snitt av stjernene for uken:
 // (sum av alle dagers vurdering) / (antall vurderte dager).
-function weeklyOverview(data) {
+function weeklyOverview(data, today) {
+  // Bare til og med i dag - planer fram i tid hører hjemme i kalenderen.
   const days = Object.entries(data.days)
-    .filter(([, day]) => day.tasks.length > 0 || day.reflection)
+    .filter(([date, day]) => date <= today && (day.tasks.length > 0 || day.reflection))
     .map(([date, day]) => ({
       date,
-      tasks: day.tasks.map((t) => ({ title: t.title, done: t.done })),
+      tasks: day.tasks.map((t) => ({ title: t.title, done: t.done, goal: !!t.goalId })),
       rating: day.reflection ? day.reflection.rating : null,
       notes: day.reflection ? day.reflection.notes : '',
       closed: !!day.reflection,
@@ -114,18 +116,28 @@ function weeklyOverview(data) {
   return { weeks };
 }
 
-// Kalender: dager lenger fram enn i morgen som har fått lagt inn oppgaver
-// på forhånd. Sortert med nærmeste dag først. Disse dukker automatisk opp
-// i "I dag"-lista den dagen det gjelder, siden de lagres på samme måte.
-function upcomingList(data, today) {
-  const tmrw = tomorrow(today);
-  return Object.entries(data.days)
-    .filter(([date, day]) => date > tmrw && day.tasks.length > 0)
-    .map(([date, day]) => ({
-      date,
-      tasks: day.tasks.map((t) => ({ id: t.id, title: t.title, done: t.done })),
-    }))
-    .sort((a, b) => (a.date < b.date ? -1 : 1));
+// Kalender: alle dager med oppgaver og/eller avslutning, fra noen måneder
+// tilbake og hele veien fremover. Klienten tegner månedsrutenettet selv.
+const CALENDAR_MONTHS_BACK = 3;
+
+function calendarData(data, today) {
+  const [y, m] = today.split('-').map(Number);
+  const minDate = new Date(Date.UTC(y, m - 1 - CALENDAR_MONTHS_BACK, 1)).toISOString().slice(0, 10);
+  const days = {};
+  for (const [date, day] of Object.entries(data.days)) {
+    if (date < minDate) continue;
+    if (day.tasks.length === 0 && !day.reflection) continue;
+    days[date] = {
+      tasks: day.tasks.map((t) => {
+        const out = { id: t.id, title: t.title, done: t.done };
+        if (t.goalId) out.goalId = t.goalId;
+        return out;
+      }),
+      closed: !!day.reflection,
+      rating: day.reflection ? day.reflection.rating : null,
+    };
+  }
+  return { minMonth: minDate.slice(0, 7), days };
 }
 
 // --- Hevy-integrasjon -----------------------------------------------------
@@ -251,9 +263,9 @@ async function publicState(userId, username, theme) {
     yesterday: yesterdayCard,
     tomorrow: { date: tmrw, tasks: tomorrowDay.tasks },
     history: historySlice(data),
-    weekly: weeklyOverview(data),
+    weekly: weeklyOverview(data, today),
     weekGoals: goals.buildWeekGoals(data, today),
-    upcoming: upcomingList(data, today),
+    calendar: calendarData(data, today),
     hevy: {
       connected: !!h.apiKey,
       lastSyncAt: h.lastSyncAt,
@@ -415,6 +427,9 @@ async function handlePostTask(req, res, user) {
   const { date, title } = body || {};
   if (!date || !title || !title.trim()) {
     return sendJson(res, 400, { error: 'date og title er påkrevd' });
+  }
+  if (!DATE_RE.test(date) || Number.isNaN(Date.parse(date + 'T00:00:00Z'))) {
+    return sendJson(res, 400, { error: 'Ugyldig dato' });
   }
   const data = await db.loadState(user.id);
   const day = db.getDay(data, date);
