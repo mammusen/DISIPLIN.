@@ -715,27 +715,17 @@ function populateTaskList(ul, tasks, date, locked, checkOnly = false) {
       li.appendChild(tag);
     }
     if (!locked && !checkOnly) {
-      const moveBox = document.createElement('span');
-      moveBox.className = 'move-buttons';
-
-      const up = document.createElement('button');
-      up.type = 'button';
-      up.className = 'move-btn';
-      up.textContent = '▲';
-      up.title = 'Flytt opp';
-      up.disabled = i === 0;
-      up.addEventListener('click', () => moveTask(date, t.id, 'up'));
-
-      const down = document.createElement('button');
-      down.type = 'button';
-      down.className = 'move-btn';
-      down.textContent = '▼';
-      down.title = 'Flytt ned';
-      down.disabled = i === tasks.length - 1;
-      down.addEventListener('click', () => moveTask(date, t.id, 'down'));
-
-      moveBox.append(up, down);
-      li.appendChild(moveBox);
+      // Hold inne og dra for å endre rekkefølge (se dra-og-slipp lenger ned).
+      li.classList.add('draggable');
+      li.dataset.id = t.id;
+      if (tasks.length > 1) {
+        const grip = document.createElement('span');
+        grip.className = 'drag-grip';
+        grip.textContent = '⠿';
+        grip.title = 'Hold inne og dra for å flytte';
+        grip.setAttribute('aria-hidden', 'true');
+        li.appendChild(grip);
+      }
 
       if (!t.goalId) {
         const rm = document.createElement('button');
@@ -748,6 +738,189 @@ function populateTaskList(ul, tasks, date, locked, checkOnly = false) {
     }
     ul.appendChild(li);
   });
+  if (!locked && !checkOnly) enableDragSort(ul, date);
+}
+
+// --- Dra og slipp for å endre rekkefølge -------------------------------
+// Mobil: hold fingeren på en oppgave et lite øyeblikk, så løftes den og kan
+// dras. Beveger du fingeren før det, scroller siden som vanlig.
+// PC: hold inne museknappen og dra.
+
+const DRAG_HOLD_MS = 280;
+const DRAG_TOUCH_TOLERANCE = 8;
+const DRAG_MOUSE_THRESHOLD = 4;
+let drag = null;
+
+function enableDragSort(ul, date) {
+  ul.dataset.date = date;
+  if (ul.dataset.dragBound) return;
+  ul.dataset.dragBound = '1';
+  ul.addEventListener('pointerdown', (e) => onDragPointerDown(e, ul));
+  // Hindrer at siden scroller mens en oppgave dras med fingeren. Lytteren må
+  // ligge på selve lista (ikke document) og være ikke-passiv.
+  ul.addEventListener(
+    'touchmove',
+    (e) => {
+      if (drag && drag.active) e.preventDefault();
+    },
+    { passive: false }
+  );
+  ul.addEventListener('contextmenu', (e) => {
+    if (drag) e.preventDefault();
+  });
+}
+
+
+function onDragPointerDown(e, ul) {
+  if (drag || e.button > 0) return;
+  const li = e.target.closest('li.draggable');
+  if (!li || li.parentElement !== ul || ul.children.length < 2) return;
+  if (e.target.closest('input, button, a, select, textarea')) return;
+  drag = {
+    ul,
+    li,
+    pointerId: e.pointerId,
+    isTouch: e.pointerType !== 'mouse',
+    startX: e.clientX,
+    startY: e.clientY + window.scrollY,
+    lastY: e.clientY + window.scrollY,
+    clientY: e.clientY,
+    startIndex: Array.prototype.indexOf.call(ul.children, li),
+    active: false,
+    timer: null,
+  };
+  if (drag.isTouch) {
+    li.classList.add('pressing');
+    drag.timer = setTimeout(startDrag, DRAG_HOLD_MS);
+  }
+  window.addEventListener('pointermove', onDragMove, { passive: false });
+  window.addEventListener('pointerup', onDragEnd);
+  window.addEventListener('pointercancel', onDragCancel);
+}
+
+function startDrag() {
+  if (!drag) return;
+  drag.active = true;
+  drag.timer = null;
+  drag.li.classList.remove('pressing');
+  drag.li.classList.add('dragging');
+  drag.ul.classList.add('sorting');
+  document.body.classList.add('is-dragging');
+  if (navigator.vibrate) {
+    try {
+      navigator.vibrate(12);
+    } catch (err) {
+      // ikke støttet - helt greit
+    }
+  }
+}
+
+function onDragMove(e) {
+  if (!drag || e.pointerId !== drag.pointerId) return;
+  const dist = Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY);
+  if (!drag.active) {
+    if (drag.isTouch) {
+      // Fingeren beveget seg før den ble holdt lenge nok: det er scrolling.
+      if (dist > DRAG_TOUCH_TOLERANCE) cleanupDrag();
+      return;
+    }
+    if (dist < DRAG_MOUSE_THRESHOLD) return;
+    startDrag();
+  }
+  e.preventDefault();
+  drag.clientY = e.clientY;
+  drag.lastY = e.clientY + window.scrollY;
+  updateDragPosition();
+  maybeAutoScroll();
+}
+
+// Scroller siden når oppgaven dras nær toppen eller bunnen av skjermen.
+function maybeAutoScroll() {
+  if (!drag || !drag.active || drag.scrollRaf) return;
+  const edge = 70;
+  const y = drag.clientY;
+  let speed = 0;
+  if (y < edge) speed = -Math.ceil((edge - y) / 6);
+  else if (y > window.innerHeight - edge) speed = Math.ceil((y - (window.innerHeight - edge)) / 6);
+  if (!speed) return;
+  drag.scrollRaf = requestAnimationFrame(() => {
+    if (!drag) return;
+    drag.scrollRaf = null;
+    const before = window.scrollY;
+    window.scrollBy(0, speed);
+    if (window.scrollY === before) return;
+    drag.lastY = drag.clientY + window.scrollY;
+    updateDragPosition();
+    maybeAutoScroll();
+  });
+}
+
+function updateDragPosition() {
+  const { li, ul } = drag;
+  li.style.transform = `translateY(${drag.lastY - drag.startY}px) scale(1.02)`;
+  // Bytt plass med naboen så lenge midten av oppgaven har passert midten av den.
+  for (let guard = 0; guard < ul.children.length; guard += 1) {
+    const rect = li.getBoundingClientRect();
+    const mid = rect.top + rect.height / 2;
+    const prev = li.previousElementSibling;
+    const next = li.nextElementSibling;
+    if (prev && mid < prev.getBoundingClientRect().top + prev.offsetHeight / 2) {
+      shiftDragged(() => ul.insertBefore(li, prev));
+    } else if (next && mid > next.getBoundingClientRect().top + next.offsetHeight / 2) {
+      shiftDragged(() => ul.insertBefore(li, next.nextElementSibling));
+    } else {
+      break;
+    }
+  }
+}
+
+// Flytter elementet i DOM-en og justerer forskyvningen, så det blir liggende
+// under fingeren/musepekeren.
+function shiftDragged(moveFn) {
+  const before = drag.li.offsetTop;
+  moveFn();
+  drag.startY += drag.li.offsetTop - before;
+  drag.li.style.transform = `translateY(${drag.lastY - drag.startY}px) scale(1.02)`;
+}
+
+async function onDragEnd(e) {
+  if (!drag || e.pointerId !== drag.pointerId) return;
+  const d = drag;
+  const wasActive = d.active;
+  cleanupDrag();
+  if (!wasActive) return;
+  const newIndex = Array.prototype.indexOf.call(d.ul.children, d.li);
+  if (newIndex === d.startIndex) return;
+  try {
+    setState(await api(`/api/tasks/${d.ul.dataset.date}/${d.li.dataset.id}/move`, {
+      method: 'POST',
+      body: JSON.stringify({ toIndex: newIndex }),
+    }));
+  } catch (err) {
+    showToast(err.message);
+  }
+  render();
+}
+
+function onDragCancel(e) {
+  if (!drag || e.pointerId !== drag.pointerId) return;
+  const wasActive = drag.active;
+  cleanupDrag();
+  if (wasActive) render();
+}
+
+function cleanupDrag() {
+  if (!drag) return;
+  clearTimeout(drag.timer);
+  if (drag.scrollRaf) cancelAnimationFrame(drag.scrollRaf);
+  drag.li.classList.remove('pressing', 'dragging');
+  drag.li.style.transform = '';
+  drag.ul.classList.remove('sorting');
+  document.body.classList.remove('is-dragging');
+  window.removeEventListener('pointermove', onDragMove);
+  window.removeEventListener('pointerup', onDragEnd);
+  window.removeEventListener('pointercancel', onDragCancel);
+  drag = null;
 }
 
 function renderHistory() {
@@ -1437,14 +1610,6 @@ async function toggleTask(date, id, done) {
 
 async function removeTask(date, id) {
   setState(await api(`/api/tasks/${date}/${id}`, { method: 'DELETE' }));
-  render();
-}
-
-async function moveTask(date, id, direction) {
-  setState(await api(`/api/tasks/${date}/${id}/move`, {
-    method: 'POST',
-    body: JSON.stringify({ direction }),
-  }));
   render();
 }
 
