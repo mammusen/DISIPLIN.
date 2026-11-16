@@ -502,8 +502,10 @@ async function handleDeleteTask(req, res, user, date, taskId) {
 async function handleMoveTask(req, res, user, date, taskId) {
   const body = await readJsonBody(req);
   const direction = body && body.direction;
-  if (direction !== 'up' && direction !== 'down') {
-    return sendJson(res, 400, { error: 'direction må være "up" eller "down"' });
+  // toIndex: ny plass etter dra-og-slipp. direction ("up"/"down") støttes fortsatt.
+  const hasIndex = body && Number.isInteger(body.toIndex);
+  if (!hasIndex && direction !== 'up' && direction !== 'down') {
+    return sendJson(res, 400, { error: 'toIndex eller direction ("up"/"down") er påkrevd' });
   }
   const data = await db.loadState(user.id);
   const day = data.days[date];
@@ -511,10 +513,19 @@ async function handleMoveTask(req, res, user, date, taskId) {
   if (day.reflection) return sendJson(res, 400, { error: 'Dagen er avsluttet' });
   const idx = day.tasks.findIndex((t) => t.id === taskId);
   if (idx === -1) return sendJson(res, 404, { error: 'Fant ikke oppgaven' });
-  const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
-  if (targetIdx >= 0 && targetIdx < day.tasks.length) {
-    [day.tasks[idx], day.tasks[targetIdx]] = [day.tasks[targetIdx], day.tasks[idx]];
-    await db.saveState(user.id, data);
+  if (hasIndex) {
+    const targetIdx = Math.max(0, Math.min(day.tasks.length - 1, body.toIndex));
+    if (targetIdx !== idx) {
+      const [moved] = day.tasks.splice(idx, 1);
+      day.tasks.splice(targetIdx, 0, moved);
+      await db.saveState(user.id, data);
+    }
+  } else {
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx >= 0 && targetIdx < day.tasks.length) {
+      [day.tasks[idx], day.tasks[targetIdx]] = [day.tasks[targetIdx], day.tasks[idx]];
+      await db.saveState(user.id, data);
+    }
   }
   sendJson(res, 200, await publicState(user.id, user.username, user.theme));
 }
