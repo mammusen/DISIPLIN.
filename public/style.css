@@ -671,26 +671,39 @@ button.ghost:hover { color: var(--text); border-color: var(--muted); }
 }
 .task-item button.remove:hover { color: var(--danger); }
 
-.move-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  flex-shrink: 0;
+/* Dra og slipp: hold inne en oppgave og dra den til ny plass. */
+.task-item.draggable {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  position: relative;
 }
-
-.move-btn {
-  background: none;
-  border: none;
+.drag-grip {
   color: var(--muted);
-  cursor: pointer;
-  font-size: 0.6rem;
+  opacity: 0.5;
+  font-size: 0.95rem;
   line-height: 1;
-  padding: 2px 4px;
-  border-radius: 4px;
-  transition: color 0.15s ease, background 0.15s ease;
+  flex-shrink: 0;
+  padding: 0 2px;
+  transition: opacity 0.15s ease;
 }
-.move-btn:hover:not(:disabled) { color: var(--text); background: var(--hover-bg); }
-.move-btn:disabled { opacity: 0.25; cursor: default; }
+.task-item.draggable:hover .drag-grip { opacity: 0.9; }
+.task-item.pressing {
+  transform: scale(0.985);
+  transition: transform 0.28s ease, border-color 0.15s ease;
+  border-color: var(--hover-tint);
+}
+.task-item.dragging {
+  z-index: 5;
+  cursor: grabbing;
+  border-color: var(--mint);
+  background: var(--card-solid);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+  transition: none;
+}
+.task-list.sorting .task-item:not(.dragging) { transition: border-color 0.15s ease; }
+body.is-dragging, body.is-dragging * { cursor: grabbing !important; }
 
 .empty-hint { color: var(--muted); font-size: 0.9rem; }
 
