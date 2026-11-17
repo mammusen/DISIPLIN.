@@ -19,6 +19,19 @@ const QUOTES = [
   { text: 'It always seems impossible until it’s done.', by: 'Tilskrevet Nelson Mandela' },
   { text: 'The secret of getting ahead is getting started.', by: 'Tilskrevet Mark Twain' },
   { text: 'Motivation gets you going, but discipline keeps you growing.', by: 'Tilskrevet John C. Maxwell' },
+  { text: 'The best time to plant a tree was 20 years ago. The second best time is now.', by: 'Kinesisk ordtak' },
+  { text: 'Fall seven times, stand up eight.', by: 'Japansk ordtak' },
+  { text: "Hard work beats talent when talent doesn't work hard.", by: 'Tim Notke' },
+  { text: 'Well done is better than well said.', by: 'Benjamin Franklin' },
+  { text: 'Energy and persistence conquer all things.', by: 'Benjamin Franklin' },
+  { text: 'No man is free who is not master of himself.', by: 'Epiktet' },
+  { text: 'He who has a why to live can bear almost any how.', by: 'Friedrich Nietzsche' },
+  { text: 'Small deeds done are better than great deeds planned.', by: 'Peter Marshall' },
+  { text: "Don't count the days, make the days count.", by: 'Tilskrevet Muhammad Ali' },
+  { text: 'If you are going through hell, keep going.', by: 'Tilskrevet Winston Churchill' },
+  { text: "Whether you think you can, or you think you can't – you're right.", by: 'Tilskrevet Henry Ford' },
+  { text: 'The man who moves a mountain begins by carrying away small stones.', by: 'Tilskrevet Konfucius' },
+  { text: 'Do the hard jobs first. The easy jobs will take care of themselves.', by: 'Tilskrevet Dale Carnegie' },
 ];
 
 const SONGS = [
@@ -42,13 +55,35 @@ const SONGS = [
   { title: 'Sail', artist: 'AWOLNATION' },
   { title: "X Gon' Give It To Ya", artist: 'DMX' },
   { title: 'Run This Town', artist: 'JAY-Z, Rihanna, Kanye West' },
+  { title: 'Survivor', artist: "Destiny's Child" },
+  { title: 'Mr. Brightside', artist: 'The Killers' },
+  { title: 'Kickstart My Heart', artist: 'Mötley Crüe' },
+  { title: "Can't Stop", artist: 'Red Hot Chili Peppers' },
+  { title: 'Uprising', artist: 'Muse' },
+  { title: 'Numb / Encore', artist: 'JAY-Z, Linkin Park' },
+  { title: 'Godzilla', artist: 'Eminem, Juice WRLD' },
+  { title: 'SICKO MODE', artist: 'Travis Scott' },
+  { title: 'Jump', artist: 'Van Halen' },
+  { title: 'Welcome to the Jungle', artist: "Guns N' Roses" },
+  { title: 'Back in Black', artist: 'AC/DC' },
+  { title: 'Born to Run', artist: 'Bruce Springsteen' },
+  { title: 'Gonna Fly Now', artist: 'Bill Conti' },
+  { title: 'On Top of the World', artist: 'Imagine Dragons' },
+  { title: 'Levels', artist: 'Avicii' },
+  { title: 'The Nights', artist: 'Avicii' },
+  { title: 'Wake Me Up', artist: 'Avicii' },
+  { title: 'Firestone', artist: 'Kygo, Conrad Sewell' },
+  { title: 'Midnight City', artist: 'M83' },
+  { title: 'Higher Ground', artist: 'Red Hot Chili Peppers' },
 ];
 
-// Dagens forslag er det samme hele dagen; «Gi meg en ny» trekker tilfeldig.
-function dayIndex(dateStr, len, salt) {
-  let h = salt;
-  for (const ch of dateStr) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return h % len;
+// Nytt sitat og ny sang hver dag (skifter når dagen skifter kl. 04). Listene
+// går i rekkefølge dag for dag, så ingenting gjentas før hele lista er brukt.
+// «Gi meg en ny» trekker tilfeldig.
+function dayIndex(dateStr, len) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dayNumber = Math.floor(Date.UTC(y, m - 1, d) / 86400000);
+  return dayNumber % len;
 }
 
 function randomOther(len, current) {
@@ -66,8 +101,8 @@ function renderMotivation() {
   const today = state.today.date;
   if (motivDate !== today) {
     motivDate = today;
-    motivQuote = dayIndex(today, QUOTES.length, 7);
-    motivSong = dayIndex(today, SONGS.length, 13);
+    motivQuote = dayIndex(today, QUOTES.length);
+    motivSong = dayIndex(today, SONGS.length);
   }
 
   const q = QUOTES[motivQuote];
@@ -103,6 +138,16 @@ document.getElementById('motiv-new').addEventListener('click', () => {
 });
 
 document.getElementById('motiv-go').addEventListener('click', () => showTab('today'));
+
+// Står appen åpen over natta, hentes ny tilstand (og dermed dagens sitat)
+// når du går tilbake til den.
+let motivLastCheck = Date.now();
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible' || !state) return;
+  if (Date.now() - motivLastCheck < 10 * 60 * 1000) return;
+  motivLastCheck = Date.now();
+  refresh();
+});
 
 // Koble fanen og visningen inn i app.js. (Appen åpner aldri rett på denne
 // fanen ved oppstart - da starter den på «I dag» som vanlig.)
