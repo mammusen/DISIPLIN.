@@ -15,6 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="motivation.css" />
 </head>
 <body>
   <div class="auth-screen" id="auth-screen">
@@ -107,6 +108,7 @@
       <button type="button" class="tab" data-tab="week" role="tab">Uka</button>
       <button type="button" class="tab" data-tab="later" role="tab"><span class="tab-long">Planlegg senere</span><span class="tab-short">Senere</span></button>
       <button type="button" class="tab" data-tab="progress" role="tab">Fremgang</button>
+      <button type="button" class="tab" data-tab="motivation" role="tab"><span class="tab-long">Motivasjon</span><span class="tab-short">Motiv</span></button>
     </nav>
 
     <div class="tab-panel" data-panel="today">
@@ -301,10 +303,41 @@
     </section>
     </div>
 
+    <div class="tab-panel" data-panel="motivation" hidden>
+    <section class="card motiv-card" id="motiv-card">
+      <h2>Mangler motivasjon?</h2>
+      <blockquote class="motiv-quote">
+        <p class="motiv-quote-text" id="motiv-quote-text"></p>
+        <span class="motiv-quote-by" id="motiv-quote-by"></span>
+      </blockquote>
+
+      <div class="motiv-song">
+        <div class="motiv-song-icon" aria-hidden="true">🎧</div>
+        <div class="motiv-song-info">
+          <span class="motiv-song-label">Sett på denne</span>
+          <span class="motiv-song-title" id="motiv-song-title"></span>
+          <span class="motiv-song-artist" id="motiv-song-artist"></span>
+        </div>
+        <div class="motiv-song-links">
+          <a class="motiv-link" id="motiv-spotify" href="#" target="_blank" rel="noopener">Spotify</a>
+          <a class="motiv-link" id="motiv-apple" href="#" target="_blank" rel="noopener">Apple Music</a>
+        </div>
+      </div>
+
+      <div class="motiv-start" id="motiv-start" hidden>
+        <p>Start smått: gjør <strong id="motiv-start-task"></strong> i bare 5 minutter.</p>
+        <button type="button" class="ghost" id="motiv-go">Til «I dag» →</button>
+      </div>
+
+      <button type="button" class="secondary motiv-new" id="motiv-new">Gi meg en ny 🔄</button>
+    </section>
+    </div>
+
     <div id="toast" class="toast" hidden></div>
   </div>
 
   <script src="app.js"></script>
+  <script src="motivation.js"></script>
   <!-- app.js styrer synlighet av #auth-screen og #app basert på innloggingsstatus -->
   <noscript>Denne appen krever JavaScript.</noscript>
 </body>
