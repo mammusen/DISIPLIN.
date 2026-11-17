@@ -15,6 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="calsync.css" />
 </head>
 <body>
   <div class="auth-screen" id="auth-screen">
@@ -251,6 +252,20 @@
           <p class="empty-hint" id="cal-day-empty" hidden></p>
         </aside>
       </div>
+      <div class="cal-sync" id="cal-sync">
+        <div class="cal-sync-text">
+          <span class="cal-sync-title">Apple Kalender</span>
+          <span class="cal-sync-hint" id="cal-sync-hint"></span>
+        </div>
+        <div class="cal-sync-actions" id="cal-sync-off">
+          <button type="button" class="primary" id="cal-sync-connect">Koble til</button>
+        </div>
+        <div class="cal-sync-actions" id="cal-sync-on" hidden>
+          <a class="btn-link primary" id="cal-sync-subscribe" href="#">Abonner</a>
+          <button type="button" class="ghost" id="cal-sync-copy">Kopier lenke</button>
+          <button type="button" class="ghost" id="cal-sync-reset" title="Lag en ny lenke – den gamle slutter å virke">Ny lenke</button>
+        </div>
+      </div>
     </section>
     </div>
 
@@ -305,6 +320,7 @@
   </div>
 
   <script src="app.js"></script>
+  <script src="calsync.js"></script>
   <!-- app.js styrer synlighet av #auth-screen og #app basert på innloggingsstatus -->
   <noscript>Denne appen krever JavaScript.</noscript>
 </body>
