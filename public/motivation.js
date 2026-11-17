@@ -1,6 +1,7 @@
-// "Motivasjon"-fanen: et sitat, et sangforslag og en liten startoppgave for
-// de dagene det butter. Alt ligger her i klienten - ingen server trengs.
-// Lastes etter app.js og bruker state, render, showTab og TABS derfra.
+// Daglig inspirasjon: "Motivasjon"-fanen (sitat, sangforslag og en liten
+// startoppgave) og "Dagens ord" øverst ved logoen. Alt ligger her i
+// klienten - ingen server trengs. Lastes etter app.js og bruker state,
+// render, refresh, showTab og TABS derfra.
 
 const QUOTES = [
   { text: 'Det vanskelige er det som tar litt tid; det umulige er det som tar litt lengre tid.', by: 'Fridtjof Nansen' },
@@ -77,6 +78,50 @@ const SONGS = [
   { title: 'Higher Ground', artist: 'Red Hot Chili Peppers' },
 ];
 
+// Dagens ord: et litt sjeldnere norsk ord med forklaring.
+const WORDS = [
+  { word: 'Fortrøstningsfull', cls: 'adj.', def: 'Full av tillit og håp; trygg på at det skal gå bra.' },
+  { word: 'Tilforlatelig', cls: 'adj.', def: 'Til å stole på; pålitelig.' },
+  { word: 'Vederheftig', cls: 'adj.', def: 'Solid og troverdig, til å stole på – om en person eller en kilde.' },
+  { word: 'Formastelig', cls: 'adj.', def: 'Så dristig at det går over grensen; overmodig, uforskammet.' },
+  { word: 'Halsstarrig', cls: 'adj.', def: 'Sta og umedgjørlig; vil ikke gi seg.' },
+  { word: 'Standhaftig', cls: 'adj.', def: 'Fast og urokkelig; gir ikke etter for press.' },
+  { word: 'Ubønnhørlig', cls: 'adj.', def: 'Som ikke lar seg bevege av bønner; ubarmhjertig, uunngåelig.' },
+  { word: 'Ufravikelig', cls: 'adj.', def: 'Som det ikke kan gjøres unntak fra; absolutt.' },
+  { word: 'Uomtvistelig', cls: 'adj.', def: 'Som ikke kan bestrides; helt sikker.' },
+  { word: 'Forgjengelig', cls: 'adj.', def: 'Som ikke varer; som går over eller forsvinner med tiden.' },
+  { word: 'Overbærende', cls: 'adj.', def: 'Tolerant og tilgivende overfor andres feil og svakheter.' },
+  { word: 'Fremsynt', cls: 'adj.', def: 'Som tenker langt fram og forutser hva som trengs.' },
+  { word: 'Besindig', cls: 'adj.', def: 'Rolig, fornuftig og behersket; tenker seg om.' },
+  { word: 'Rådvill', cls: 'adj.', def: 'Usikker på hva en skal gjøre; uten løsning.' },
+  { word: 'Stringent', cls: 'adj.', def: 'Streng og konsekvent; logisk presis.' },
+  { word: 'Pertentlig', cls: 'adj.', def: 'Overdrevent nøyaktig og ordentlig, pirkete.' },
+  { word: 'Omstendelig', cls: 'adj.', def: 'Som tar med alle detaljer; tungvint og langdryg.' },
+  { word: 'Uforvarende', cls: 'adv.', def: 'Uten å vite eller ane det; uforvarende kom han til å si for mye.' },
+  { word: 'Tilbakeholden', cls: 'adj.', def: 'Reservert; forsiktig med å vise følelser eller meninger.' },
+  { word: 'Imøtekommende', cls: 'adj.', def: 'Vennlig, hjelpsom og villig til å strekke seg for andre.' },
+  { word: 'Prokrastinere', cls: 'verb', def: 'Utsette noe man burde gjort nå – til senere, og så til senere igjen.' },
+  { word: 'Bedagelig', cls: 'adj.', def: 'Rolig og makelig, uten hastverk.' },
+  { word: 'Forstokket', cls: 'adj.', def: 'Fastlåst i gamle meninger; umulig å overbevise.' },
+  { word: 'Skjebnesvanger', cls: 'adj.', def: 'Som får store og ofte uheldige følger.' },
+  { word: 'Ettergivende', cls: 'adj.', def: 'Som gir etter for lett; for lite streng.' },
+  { word: 'Fyndord', cls: 'subst.', def: 'Kort og slagkraftig uttrykk eller ordtak.' },
+  { word: 'Sedvane', cls: 'subst.', def: 'Skikk eller vane som har festet seg over tid.' },
+  { word: 'Vidløftig', cls: 'adj.', def: 'Omfattende og langtrukken; også: lettsindig, utsvevende.' },
+  { word: 'Kontemplativ', cls: 'adj.', def: 'Preget av rolig ettertanke og betraktning.' },
+  { word: 'Ambivalent', cls: 'adj.', def: 'Med motstridende følelser eller holdninger til det samme.' },
+  { word: 'Kverulant', cls: 'subst.', def: 'Person som stadig klager, protesterer og krangler.' },
+  { word: 'Selvironisk', cls: 'adj.', def: 'I stand til å spøke med og le av seg selv.' },
+  { word: 'Sneversynt', cls: 'adj.', def: 'Trangsynt; ser ting fra et begrenset perspektiv.' },
+  { word: 'Lunefull', cls: 'adj.', def: 'Ustadig og uforutsigbar, særlig i humøret.' },
+  { word: 'Påholden', cls: 'adj.', def: 'Nøye med pengene; sparsom, nesten gjerrig.' },
+  { word: 'Oppofrende', cls: 'adj.', def: 'Som gir mye av seg selv for andres skyld.' },
+  { word: 'Målbevisst', cls: 'adj.', def: 'Som vet hva en vil, og arbeider fast mot det.' },
+  { word: 'Seiglivet', cls: 'adj.', def: 'Som holder seg lenge; vanskelig å bli kvitt.' },
+  { word: 'Gemyttlig', cls: 'adj.', def: 'Hyggelig, koselig og lun.' },
+  { word: 'Innbitt', cls: 'adj.', def: 'Hard og sammenbitt; hardnakket og intens.' },
+];
+
 // Nytt sitat og ny sang hver dag (skifter når dagen skifter kl. 04). Listene
 // går i rekkefølge dag for dag, så ingenting gjentas før hele lista er brukt.
 // «Gi meg en ny» trekker tilfeldig.
@@ -91,6 +136,27 @@ function randomOther(len, current) {
   let i = current;
   while (i === current) i = Math.floor(Math.random() * len);
   return i;
+}
+
+function renderWordOfDay() {
+  let box = document.getElementById('word-day');
+  if (!box) {
+    // Plasseres i toppfeltet, rett ved siden av logoen.
+    const row = document.querySelector('.topbar-row');
+    if (!row) return;
+    box = document.createElement('div');
+    box.className = 'word-day';
+    box.id = 'word-day';
+    box.innerHTML =
+      '<span class="word-day-label">Dagens ord</span>' +
+      '<span class="word-day-head"><span class="word-day-word"></span> <span class="word-day-class"></span></span>' +
+      '<span class="word-day-def"></span>';
+    row.insertBefore(box, row.children[1] || null);
+  }
+  const w = WORDS[dayIndex(state.today.date, WORDS.length)];
+  box.querySelector('.word-day-word').textContent = w.word;
+  box.querySelector('.word-day-class').textContent = w.cls;
+  box.querySelector('.word-day-def').textContent = w.def;
 }
 
 let motivQuote = null;
@@ -139,7 +205,7 @@ document.getElementById('motiv-new').addEventListener('click', () => {
 
 document.getElementById('motiv-go').addEventListener('click', () => showTab('today'));
 
-// Står appen åpen over natta, hentes ny tilstand (og dermed dagens sitat)
+// Står appen åpen over natta, hentes ny tilstand (og dermed dagens sitat og ord)
 // når du går tilbake til den.
 let motivLastCheck = Date.now();
 document.addEventListener('visibilitychange', () => {
@@ -156,5 +222,8 @@ TABS.push('motivation');
 const renderWithoutMotivation = render;
 render = function renderWithMotivation() {
   renderWithoutMotivation();
-  if (state) renderMotivation();
+  if (state) {
+    renderMotivation();
+    renderWordOfDay();
+  }
 };

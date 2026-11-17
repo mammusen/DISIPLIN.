@@ -1,4 +1,4 @@
-/* --- Motivasjon-fanen --- */
+/* --- Motivasjon-fanen og Dagens ord --- */
 
 .tabbar { grid-template-columns: repeat(5, 1fr); }
 
@@ -115,4 +115,50 @@
 @media (max-width: 520px) {
   .motiv-song-links { width: 100%; }
   .motiv-link { flex: 1; justify-content: center; }
+}
+
+/* Dagens ord - øverst, ved siden av logoen */
+
+.word-day {
+  flex: 1 1 260px;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-right: auto;
+  padding: 8px 14px;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 9px 9px 0;
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.word-day-label {
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-2);
+}
+
+.word-day-word {
+  font-family: 'Sora', 'Inter', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.word-day-class { font-size: 0.75rem; font-style: italic; color: var(--muted); }
+
+.word-day-def { font-size: 0.82rem; color: var(--muted); line-height: 1.35; }
+
+@media (max-width: 640px) {
+  /* Mobil: kompakt stripe under logo og knapper. */
+  .word-day { order: 3; flex-basis: 100%; max-width: none; padding: 6px 12px; }
+  .word-day-word { font-size: 0.95rem; }
+  .word-day-def {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
 }
