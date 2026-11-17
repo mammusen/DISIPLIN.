@@ -20,7 +20,6 @@ const {
 const { THEME_KEYS } = require('./lib/themes');
 const hevy = require('./lib/hevy');
 const goals = require('./lib/goals');
-const ics = require('./lib/ics');
 
 const HEVY_SYNC_WEEKS_BACK = 8; // hvor mange uker tilbake vi henter/viser belastning for
 const HEVY_TEMPLATE_CACHE_DAYS = 7; // hvor lenge øvelsesbiblioteket caches før det hentes på nytt
@@ -267,7 +266,6 @@ async function publicState(userId, username, theme) {
     weekly: weeklyOverview(data, today),
     weekGoals: goals.buildWeekGoals(data, today),
     calendar: calendarData(data, today),
-    calendarFeed: data.calendarFeed ? { path: `/cal/${userId}/${data.calendarFeed.token}.ics` } : null,
     hevy: {
       connected: !!h.apiKey,
       lastSyncAt: h.lastSyncAt,
@@ -642,42 +640,6 @@ async function handleToggleWeeklyGoal(req, res, user, goalId) {
   sendJson(res, 200, await publicState(user.id, user.username, user.theme));
 }
 
-// --- Kalender-abonnement (Apple Kalender o.l.) ----------------------------
-
-// Lager (eller bytter ut) den personlige abonnementslenken. Den gamle slutter
-// da å virke.
-async function handleCreateCalendarFeed(req, res, user) {
-  const data = await db.loadState(user.id);
-  data.calendarFeed = { token: ics.newFeedToken(), createdAt: new Date().toISOString() };
-  await db.saveState(user.id, data);
-  sendJson(res, 200, await publicState(user.id, user.username, user.theme));
-}
-
-async function handleDeleteCalendarFeed(req, res, user) {
-  const data = await db.loadState(user.id);
-  delete data.calendarFeed;
-  await db.saveState(user.id, data);
-  sendJson(res, 200, await publicState(user.id, user.username, user.theme));
-}
-
-// Offentlig (ingen innlogging - kalenderappen har ingen cookie), men krever
-// det hemmelige tokenet i lenken.
-async function handleCalendarFeed(req, res, userId, token) {
-  const data = await db.loadState(userId);
-  if (!data.calendarFeed || !ics.tokenMatches(data.calendarFeed.token, token)) {
-    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-    return res.end('Fant ikke kalenderen');
-  }
-  const body = ics.buildFeed(data, userId, todayStr());
-  res.writeHead(200, {
-    'Content-Type': 'text/calendar; charset=utf-8',
-    'Content-Disposition': 'inline; filename="disiplin.ics"',
-    'Cache-Control': 'no-cache, no-store, must-revalidate',
-    'Content-Length': Buffer.byteLength(body),
-  });
-  res.end(req.method === 'HEAD' ? undefined : body);
-}
-
 // --- Hevy-handlers (krever innlogging) ------------------------------------
 
 async function handleSetHevyKey(req, res, user) {
@@ -755,10 +717,6 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/auth/me' && req.method === 'GET') {
       return await handleMe(req, res);
     }
-    const cm = pathname.match(/^\/cal\/([A-Za-z0-9_-]{1,64})\/([A-Za-z0-9_-]{16,64})\.ics$/);
-    if (cm && (req.method === 'GET' || req.method === 'HEAD')) {
-      return await handleCalendarFeed(req, res, cm[1], cm[2]);
-    }
 
     // Alt annet under /api/ krever innlogging
     if (pathname.startsWith('/api/')) {
@@ -804,12 +762,6 @@ const server = http.createServer(async (req, res) => {
       gm = pathname.match(/^\/api\/goals\/([^/]+)\/toggle$/);
       if (gm && req.method === 'POST') {
         return await handleToggleWeeklyGoal(req, res, user, decodeURIComponent(gm[1]));
-      }
-      if (pathname === '/api/calendar-feed' && req.method === 'POST') {
-        return await handleCreateCalendarFeed(req, res, user);
-      }
-      if (pathname === '/api/calendar-feed' && req.method === 'DELETE') {
-        return await handleDeleteCalendarFeed(req, res, user);
       }
       if (pathname === '/api/hevy/key' && req.method === 'POST') {
         return await handleSetHevyKey(req, res, user);
