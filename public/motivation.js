@@ -138,25 +138,102 @@ function randomOther(len, current) {
   return i;
 }
 
-function renderWordOfDay() {
-  let box = document.getElementById('word-day');
-  if (!box) {
-    // Plasseres i toppfeltet, rett ved siden av logoen.
-    const row = document.querySelector('.topbar-row');
-    if (!row) return;
-    box = document.createElement('div');
-    box.className = 'word-day';
-    box.id = 'word-day';
-    box.innerHTML =
-      '<span class="word-day-label">Dagens ord</span>' +
-      '<span class="word-day-head"><span class="word-day-word"></span> <span class="word-day-class"></span></span>' +
-      '<span class="word-day-def"></span>';
-    row.insertBefore(box, row.children[1] || null);
+// Ordene går i fast rekkefølge fra dagen funksjonen kom, så "lærte ord" kan
+// regnes ut fra datoen alene - samme liste på alle enheter, uten lagring.
+const WORDS_START = '2026-11-17';
+let wordMenuOpen = false;
+
+function wordsLearned(today) {
+  const out = [];
+  const seen = new Set();
+  for (let d = today; d >= WORDS_START && out.length < WORDS.length; d = addDaysLocal(d, -1)) {
+    const i = dayIndex(d, WORDS.length);
+    if (seen.has(i)) continue;
+    seen.add(i);
+    out.push({ date: d, ...WORDS[i] });
   }
+  return out; // nyeste først
+}
+
+function buildWordDay() {
+  const row = document.querySelector('.topbar-row');
+  if (!row) return null;
+  const wrap = document.createElement('div');
+  wrap.className = 'word-day-wrap';
+  wrap.id = 'word-day-wrap';
+  wrap.innerHTML =
+    '<button type="button" class="word-day" id="word-day" aria-expanded="false" aria-controls="word-day-menu">' +
+    '<span class="word-day-label">Dagens ord <span class="word-day-chevron" aria-hidden="true">▾</span></span>' +
+    '<span class="word-day-head"><span class="word-day-word"></span> <span class="word-day-class"></span></span>' +
+    '<span class="word-day-def"></span>' +
+    '</button>' +
+    '<div class="word-day-menu" id="word-day-menu" hidden>' +
+    '<p class="word-day-menu-title"></p>' +
+    '<ol class="word-day-list"></ol>' +
+    '</div>';
+  row.insertBefore(wrap, row.children[1] || null);
+  wrap.querySelector('#word-day').addEventListener('click', () => setWordMenu(!wordMenuOpen));
+  return wrap;
+}
+
+function setWordMenu(open) {
+  wordMenuOpen = open;
+  const wrap = document.getElementById('word-day-wrap');
+  if (!wrap) return;
+  wrap.classList.toggle('open', open);
+  wrap.querySelector('#word-day').setAttribute('aria-expanded', open ? 'true' : 'false');
+  wrap.querySelector('#word-day-menu').hidden = !open;
+  if (open) renderWordList();
+}
+
+function renderWordList() {
+  const today = state.today.date;
+  const words = wordsLearned(today);
+  const n = words.length;
+  document.querySelector('.word-day-menu-title').textContent =
+    n === 1 ? 'Du har lært 1 ord så langt' : `Du har lært ${n} ord så langt`;
+  const list = document.querySelector('.word-day-list');
+  list.innerHTML = '';
+  for (const w of words) {
+    const li = document.createElement('li');
+    li.className = 'word-day-item' + (w.date === today ? ' is-today' : '');
+    const head = document.createElement('div');
+    head.className = 'word-day-item-head';
+    const word = document.createElement('span');
+    word.className = 'word-day-item-word';
+    word.textContent = w.word;
+    const cls = document.createElement('span');
+    cls.className = 'word-day-class';
+    cls.textContent = w.cls;
+    const date = document.createElement('span');
+    date.className = 'word-day-item-date';
+    date.textContent = w.date === today ? 'I dag' : fmtShortDate(w.date);
+    head.append(word, ' ', cls, date);
+    const def = document.createElement('p');
+    def.className = 'word-day-item-def';
+    def.textContent = w.def;
+    li.append(head, def);
+    list.appendChild(li);
+  }
+}
+
+// Lukk menyen ved klikk utenfor eller Escape.
+document.addEventListener('click', (e) => {
+  if (wordMenuOpen && !e.target.closest('#word-day-wrap')) setWordMenu(false);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && wordMenuOpen) setWordMenu(false);
+});
+
+function renderWordOfDay() {
+  const wrap = document.getElementById('word-day-wrap') || buildWordDay();
+  if (!wrap) return;
   const w = WORDS[dayIndex(state.today.date, WORDS.length)];
-  box.querySelector('.word-day-word').textContent = w.word;
-  box.querySelector('.word-day-class').textContent = w.cls;
-  box.querySelector('.word-day-def').textContent = w.def;
+  wrap.querySelector('.word-day-word').textContent = w.word;
+  wrap.querySelector('.word-day-class').textContent = w.cls;
+  wrap.querySelector('.word-day-def').textContent = w.def;
+  wrap.querySelector('#word-day').title = 'Se alle ordene du har lært';
+  if (wordMenuOpen) renderWordList();
 }
 
 let motivQuote = null;

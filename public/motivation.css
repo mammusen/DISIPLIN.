@@ -117,21 +117,35 @@
   .motiv-link { flex: 1; justify-content: center; }
 }
 
-/* Dagens ord - øverst, ved siden av logoen */
+/* Dagens ord - øverst, ved siden av logoen. Klikk for å se alle lærte ord. */
 
-.word-day {
+.word-day-wrap {
+  position: relative;
   flex: 1 1 260px;
   max-width: 440px;
+  margin-right: auto;
+}
+
+.word-day {
+  width: 100%;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 1px;
-  margin-right: auto;
   padding: 8px 14px;
+  text-align: left;
+  font-weight: 400;
+  color: var(--text);
+  border: none;
   border-left: 3px solid var(--accent);
   border-radius: 0 9px 9px 0;
   background: var(--card);
   box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: background 0.15s ease;
 }
+
+.word-day:hover { background: color-mix(in srgb, var(--card) 88%, var(--text)); }
 
 .word-day-label {
   font-size: 0.66rem;
@@ -140,6 +154,14 @@
   letter-spacing: 0.08em;
   color: var(--accent-2);
 }
+
+.word-day-chevron {
+  display: inline-block;
+  margin-left: 2px;
+  transition: transform 0.2s ease;
+}
+
+.word-day-wrap.open .word-day-chevron { transform: rotate(180deg); }
 
 .word-day-word {
   font-family: 'Sora', 'Inter', sans-serif;
@@ -151,9 +173,60 @@
 
 .word-day-def { font-size: 0.82rem; color: var(--muted); line-height: 1.35; }
 
+.word-day-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  min-width: 300px;
+  max-height: min(60vh, 460px);
+  overflow-y: auto;
+  z-index: 20;
+  padding: 14px;
+  background: var(--card-solid);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+  animation: motiv-pop 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.word-day-menu-title {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.word-day-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.word-day-item {
+  padding: 9px 11px;
+  background: var(--well);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+}
+
+.word-day-item.is-today { border-color: var(--accent); }
+
+.word-day-item-head { display: flex; align-items: baseline; gap: 6px; }
+.word-day-item-word { font-weight: 800; }
+.word-day-item-date { margin-left: auto; font-size: 0.72rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.word-day-item.is-today .word-day-item-date { color: var(--accent-2); }
+.word-day-item-def { margin: 2px 0 0; font-size: 0.82rem; color: var(--muted); line-height: 1.35; }
+
 @media (max-width: 640px) {
   /* Mobil: kompakt stripe under logo og knapper. */
-  .word-day { order: 3; flex-basis: 100%; max-width: none; padding: 6px 12px; }
+  .word-day-wrap { order: 3; flex-basis: 100%; max-width: none; }
+  .word-day { padding: 6px 12px; }
   .word-day-word { font-size: 0.95rem; }
   .word-day-def {
     display: -webkit-box;
@@ -161,4 +234,5 @@
     -webkit-line-clamp: 2;
     overflow: hidden;
   }
+  .word-day-menu { min-width: 0; max-height: 55vh; }
 }
