@@ -1,0 +1,370 @@
+/* ==========================================================================
+   Interaktivitet (fx.js): innlogging, hilsen, fremdrift, gnister, kjæledyr.
+   ========================================================================== */
+
+/* --- Partikler ------------------------------------------------------------- */
+
+.fx-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 90;
+  overflow: hidden;
+}
+
+.fx-spark {
+  position: absolute;
+  border-radius: 2px;
+  box-shadow: 0 0 8px currentColor;
+}
+
+/* --- Innloggingsskjermen ---------------------------------------------------- */
+
+.auth-screen {
+  position: relative;
+  overflow: hidden;
+  flex-direction: column;
+  gap: 26px;
+  padding: 40px 20px;
+  background:
+    radial-gradient(900px 500px at 50% 115%, color-mix(in srgb, var(--accent) 34%, transparent), transparent 70%),
+    radial-gradient(600px 400px at 50% -10%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%);
+}
+
+.fx-embers {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.auth-screen > *:not(.fx-embers) { position: relative; z-index: 1; }
+
+.auth-hero {
+  text-align: center;
+  animation: rd-enter 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.auth-clock {
+  font-family: 'Sora', sans-serif;
+  font-size: clamp(4rem, 15vw, 7.5rem);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(180deg, var(--text) 30%, color-mix(in srgb, var(--text) 45%, var(--accent)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 60px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.auth-date {
+  margin-top: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.auth-greet { margin-top: 2px; font-size: 0.9rem; color: var(--muted); }
+
+.auth-word {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  background: color-mix(in srgb, var(--card) 70%, transparent);
+  border: 1px solid var(--card-border);
+}
+
+.auth-word:empty { display: none; }
+.auth-word span { color: var(--accent-2); font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; }
+
+.auth-card {
+  background: color-mix(in srgb, var(--card) 72%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+  border-color: var(--card-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 30px 80px -30px rgba(0, 0, 0, 0.9);
+  animation: rd-enter 0.7s 0.08s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.profile-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 22px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 12px 24px -12px rgba(0, 0, 0, 0.8);
+}
+
+.profile-tile:hover .profile-avatar,
+.profile-tile:focus-visible .profile-avatar {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 0 0 3px var(--bg),
+    0 0 0 5px var(--accent),
+    0 16px 34px -10px var(--accent);
+}
+
+.pin-avatar { border-radius: 22px; box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent), 0 14px 30px -12px var(--accent); }
+
+.pin-dots { gap: 18px; }
+
+.pin-dot {
+  width: 16px;
+  height: 16px;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+
+.pin-dot.filled {
+  transform: scale(1.25);
+  box-shadow: 0 0 14px var(--accent);
+}
+
+.pin-dots.shake { animation: fx-shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+.pin-dots.shake .pin-dot { border-color: var(--danger); }
+
+.pin-keypad { gap: 14px; max-width: 264px; }
+
+.pin-key {
+  width: 72px;
+  height: 72px;
+  justify-self: center;
+  padding: 0;
+  border-radius: 50%;
+  font-family: 'Sora', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--raise) 80%, transparent);
+  border: 1px solid var(--card-border);
+  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.2s ease, border-color 0.15s ease;
+}
+
+.pin-key:hover { background: var(--accent-soft); border-color: var(--accent); }
+
+/* På mobil "henger" hover igjen etter et trykk - bare trykk-effekten der. */
+@media (hover: none) {
+  .pin-key:hover { background: color-mix(in srgb, var(--raise) 80%, transparent); border-color: var(--card-border); }
+}
+
+.pin-key:active,
+.pin-key.pressed {
+  transform: scale(0.9);
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 24px -2px var(--accent);
+}
+
+.pin-key-empty,
+.pin-key-empty:hover { background: none; border: none; box-shadow: none; }
+.pin-key-del { font-size: 1.2rem; }
+
+@keyframes fx-shake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-8px); }
+  40%, 60% { transform: translateX(8px); }
+}
+
+/* Når koden eller navnet skrives inn: kompakt klokke, så tastaturet får plass. */
+.auth-screen:has(#pin-view:not([hidden])) .auth-clock,
+.auth-screen:has(#name-view:not([hidden])) .auth-clock { font-size: clamp(2.6rem, 9vw, 4rem); }
+.auth-screen:has(#pin-view:not([hidden])) :is(.auth-greet, .auth-word),
+.auth-screen:has(#name-view:not([hidden])) :is(.auth-greet, .auth-word) { display: none; }
+
+@media (max-width: 640px) {
+  .auth-screen { gap: 18px; padding: 28px 16px; justify-content: flex-start; }
+  .auth-screen:has(#pin-view:not([hidden])) .auth-date { display: none; }
+  .auth-screen:has(#pin-view:not([hidden])) .pin-avatar { width: 56px; height: 56px; font-size: 1.3rem; margin-top: 2px; }
+  .pin-key { width: 62px; height: 62px; font-size: 1.35rem; }
+  .pin-keypad { gap: 10px 16px; }
+  .auth-screen:has(#pin-view:not([hidden])) .auth-clock { font-size: 2.4rem; }
+  .auth-screen:has(#pin-view:not([hidden])) .auth-card { padding: 22px 20px; }
+  .auth-screen:has(#pin-view:not([hidden])) .pin-dots { margin: 12px 0 18px; }
+}
+
+/* --- Appen glir inn etter innlogging ---------------------------------------- */
+
+.app-enter .topbar,
+.app-enter .pet-card,
+.app-enter .tabbar,
+.app-enter .tab-panel:not([hidden]) {
+  animation: rd-enter 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.app-enter .pet-card { animation-delay: 0.08s; }
+.app-enter .tabbar { animation-delay: 0.16s; }
+.app-enter .tab-panel:not([hidden]) { animation-delay: 0.24s; }
+
+/* --- Hilsen i toppen --------------------------------------------------------- */
+
+.app-greeting {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 10px 0 0;
+}
+
+.app-greet {
+  font-family: 'Sora', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.app-left {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.app-left::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: var(--mint);
+  box-shadow: 0 0 8px var(--mint);
+  vertical-align: 1px;
+  animation: fx-live 2s ease-in-out infinite;
+}
+
+@keyframes fx-live { 50% { opacity: 0.35; } }
+
+/* --- Dagens fremdrift ---------------------------------------------------------- */
+
+.day-progress { margin: -6px 0 18px; }
+
+.day-progress-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 7px;
+  font-size: 0.78rem;
+}
+
+.day-progress-label {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.day-progress-count { font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+
+.day-progress-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--well);
+  border: 1px solid var(--card-border);
+  overflow: hidden;
+}
+
+.day-progress-fill {
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 12px -2px var(--accent);
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1), background 0.3s ease;
+}
+
+.day-progress.complete .day-progress-fill {
+  background: linear-gradient(90deg, var(--mint), color-mix(in srgb, var(--mint) 60%, #fff));
+  box-shadow: 0 0 14px -2px var(--mint);
+}
+
+.day-progress.complete .day-progress-count { color: var(--mint); }
+
+/* --- Kjæledyret ------------------------------------------------------------------ */
+
+.pet-card { overflow: visible; }
+
+.pet-emoji {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: transform 0.2s ease;
+}
+
+.pet-emoji:hover { transform: scale(1.05) rotate(-4deg); }
+.pet-emoji:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 4px; }
+.pet-emoji.fx-bounce { animation: fx-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+@keyframes fx-bounce {
+  0% { transform: scale(1); }
+  30% { transform: scale(0.85, 1.12) translateY(-10px); }
+  55% { transform: scale(1.1, 0.9); }
+  100% { transform: scale(1); }
+}
+
+.pet-bubble {
+  position: absolute;
+  left: 140px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  max-width: min(340px, calc(100% - 160px));
+  padding: 10px 14px;
+  border-radius: 4px 14px 14px 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--raise);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow: 0 16px 40px -16px rgba(0, 0, 0, 0.9), 0 0 24px -10px var(--accent);
+}
+
+.pet-bubble.show { animation: fx-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+@keyframes fx-pop {
+  from { opacity: 0; transform: translateY(-50%) translateX(-8px) scale(0.92); }
+  to { opacity: 1; transform: translateY(-50%); }
+}
+
+@media (max-width: 640px) {
+  .pet-bubble { left: 104px; top: 20px; transform: none; max-width: calc(100% - 120px); }
+  @keyframes fx-pop {
+    from { opacity: 0; transform: translateX(-8px) scale(0.92); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
+.fx-pulse { display: inline-block; animation: fx-pulse 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+@keyframes fx-pulse {
+  40% { transform: scale(1.25); filter: brightness(1.4); }
+}
+
+/* --- Lys som følger pekeren -------------------------------------------------------- */
+
+@media (pointer: fine) {
+  .card {
+    background-image:
+      radial-gradient(380px circle at var(--mx, -999px) var(--my, -999px), color-mix(in srgb, var(--accent) 9%, transparent), transparent 65%),
+      linear-gradient(180deg, var(--raise) 0%, var(--card) 140px);
+  }
+}
+
+/* --- Rolig bevegelse ------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-hero,
+  .auth-card,
+  .app-enter .topbar,
+  .app-enter .pet-card,
+  .app-enter .tabbar,
+  .app-enter .tab-panel:not([hidden]),
+  .pin-dots.shake,
+  .pet-emoji.fx-bounce,
+  .pet-bubble.show,
+  .fx-pulse,
+  .app-left::before { animation: none; }
+}
