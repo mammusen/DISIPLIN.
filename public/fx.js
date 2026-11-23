@@ -95,17 +95,18 @@
     }
   }
 
-  // Glør som stiger opp bak innloggingen.
+  // Glør som stiger opp bak innloggingen og (roligere) bak appen.
   const embers = (() => {
     const canvas = document.createElement('canvas');
     canvas.className = 'fx-embers';
     canvas.setAttribute('aria-hidden', 'true');
-    const auth = $('auth-screen');
-    auth.prepend(canvas);
+    document.body.prepend(canvas);
     const ctx = canvas.getContext('2d');
     let parts = [];
     let raf = null;
     let dpr = 1;
+    let mode = null;
+    let strength = 1;
 
     function resize() {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -133,7 +134,7 @@
         p.life += 0.03;
         if (p.y < -10) Object.assign(p, spawn(false));
         const flicker = 0.45 + Math.sin(p.life * 3) * 0.25;
-        ctx.globalAlpha = Math.max(0, flicker) * Math.min(1, p.y / (canvas.height * 0.35));
+        ctx.globalAlpha = Math.max(0, flicker) * Math.min(1, p.y / (canvas.height * 0.35)) * strength;
         ctx.fillStyle = color;
         ctx.shadowColor = color;
         ctx.shadowBlur = 12 * dpr;
@@ -145,25 +146,28 @@
     }
 
     return {
-      start() {
-        if (reduceMotion || raf) return;
+      // mode: 'auth' (tett) eller 'app' (få og svake, så de ikke forstyrrer).
+      start(next) {
+        if (reduceMotion || mode === next) return;
+        mode = next;
         resize();
-        const n = Math.round(Math.min(70, (window.innerWidth * window.innerHeight) / 18000));
+        const area = (window.innerWidth * window.innerHeight) / 18000;
+        const n = Math.round(next === 'auth' ? Math.min(70, area) : Math.min(28, area * 0.45));
+        strength = next === 'auth' ? 1 : 0.55;
         parts = Array.from({ length: n }, () => spawn(true));
-        raf = requestAnimationFrame(frame);
+        if (!raf) raf = requestAnimationFrame(frame);
       },
       stop() {
         if (raf) cancelAnimationFrame(raf);
         raf = null;
+        mode = null;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
       },
       resize,
     };
   })();
 
-  window.addEventListener('resize', () => {
-    if (!$('auth-screen').hidden) embers.resize();
-  });
+  window.addEventListener('resize', () => embers.resize());
 
   /* ------------------------------------------------------------------ */
   /* Innloggingsskjermen                                                 */
@@ -228,13 +232,15 @@
   // Følg med på når innloggingen og appen vises.
   function onScreenChange() {
     const authVisible = !$('auth-screen').hidden;
+    const app = $('app');
     if (authVisible) {
       tickAuth();
-      embers.start();
+      embers.start('auth');
+    } else if (!app.hidden) {
+      embers.start('app');
     } else {
       embers.stop();
     }
-    const app = $('app');
     if (!app.hidden && !app.dataset.entered) {
       app.dataset.entered = '1';
       app.classList.remove('app-enter');
@@ -252,29 +258,38 @@
   /* Toppen av appen: hilsen og hvor mye som er igjen av dagen           */
   /* ------------------------------------------------------------------ */
 
+  // Samme klokke og hilsen som på innloggingen, i mindre format.
   const tagline = document.querySelector('.topbar .tagline');
+  const clockLine = document.createElement('span');
+  clockLine.className = 'app-clock';
+  const textBox = document.createElement('span');
+  textBox.className = 'app-greet-text';
   const greetLine = document.createElement('span');
   greetLine.className = 'app-greet';
   const leftLine = document.createElement('span');
   leftLine.className = 'app-left';
+  textBox.append(greetLine, leftLine);
   if (tagline) {
     tagline.textContent = '';
     tagline.classList.add('app-greeting');
-    tagline.append(greetLine, leftLine);
+    tagline.append(clockLine, textBox);
   }
 
   function tickGreeting() {
     if (!tagline) return;
-    const p = osloParts();
+    const now = new Date();
+    const p = osloParts(now);
     const name = (state && state.user && state.user.username) || $('username-pill').textContent || '';
+    clockLine.textContent = `${String(p.h).padStart(2, '0')}:${String(p.min).padStart(2, '0')}`;
     greetLine.textContent = `${greeting(p.h)}${name ? `, ${name}` : ''}.`;
-    leftLine.textContent = `${fmtLeft(minutesLeftOfDay(p))} igjen av dagen`;
+    const date = now.toLocaleDateString('no-NO', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Oslo' });
+    leftLine.textContent = `${date.charAt(0).toUpperCase() + date.slice(1)} · ${fmtLeft(minutesLeftOfDay(p))} igjen av dagen`;
   }
 
   setInterval(() => {
     if (!$('auth-screen').hidden) tickAuth();
     if (!$('app').hidden) tickGreeting();
-  }, 20000);
+  }, 10000);
 
   /* ------------------------------------------------------------------ */
   /* Dagens fremdrift                                                    */

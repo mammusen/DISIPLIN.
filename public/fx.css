@@ -37,7 +37,7 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 0;
+  z-index: -1; /* bak alt innhold, men over bakgrunnsfargen */
 }
 
 .auth-screen > *:not(.fx-embers) { position: relative; z-index: 1; }
@@ -200,18 +200,101 @@
 .app-enter .tabbar { animation-delay: 0.16s; }
 .app-enter .tab-panel:not([hidden]) { animation-delay: 0.24s; }
 
-/* --- Hilsen i toppen --------------------------------------------------------- */
+/* --- Hovedskjermen: samme uttrykk som innloggingen ---------------------------- */
+
+/* Samme gløtt nederst som på innloggingen, og appen over glørne. */
+body {
+  background:
+    radial-gradient(1100px 520px at 50% -260px, color-mix(in srgb, var(--accent) 30%, transparent), transparent 72%),
+    radial-gradient(1000px 520px at 50% 118%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+.app { position: relative; z-index: 1; }
+
+/* Glassaktige flater, så glørne skimtes bak - som innloggingskortet. */
+.card,
+.pet-card,
+.word-day,
+.word-day-menu {
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+}
+
+.card {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--raise) 76%, transparent) 0%,
+    color-mix(in srgb, var(--card) 72%, transparent) 140px);
+}
+
+.pet-card {
+  background:
+    radial-gradient(420px 220px at 0% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%),
+    linear-gradient(180deg, color-mix(in srgb, var(--raise) 78%, transparent), color-mix(in srgb, var(--card) 72%, transparent));
+}
+
+.word-day { background: color-mix(in srgb, var(--card) 72%, transparent); }
+
+/* Toppen som rutenett: logo og knapper øverst, klokke/hilsen og dagens ord
+   under. På mobil: alt i én kolonne. */
+.topbar-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 440px);
+  grid-template-areas:
+    "logo actions"
+    "greet word";
+  align-items: center;
+  gap: 14px 24px;
+}
+
+.topbar-row > div:first-child { display: contents; }
+.topbar-row h1 { grid-area: logo; }
+.topbar-row .tagline { grid-area: greet; margin: 0; }
+.topbar-actions { grid-area: actions; justify-self: end; }
+.word-day-wrap { grid-area: word; max-width: none; margin: 0; }
+
+@media (max-width: 760px) {
+  .topbar-row {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "logo" "greet" "actions" "word";
+  }
+  .topbar-actions { justify-self: start; }
+}
+
+/* Hilsen i toppen: stor klokke som på innloggingen */
 
 .app-greeting {
   display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.app-clock {
+  font-family: 'Sora', sans-serif;
+  font-size: clamp(2.6rem, 6vw, 3.6rem);
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(180deg, var(--text) 30%, color-mix(in srgb, var(--text) 45%, var(--accent)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 40px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.app-greet-text {
+  display: flex;
   flex-direction: column;
-  gap: 2px;
-  margin: 10px 0 0;
+  gap: 3px;
+  padding-left: 16px;
+  border-left: 1px solid var(--card-border);
 }
 
 .app-greet {
   font-family: 'Sora', sans-serif;
-  font-size: 1.35rem;
+  font-size: 1.2rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--text);
@@ -348,9 +431,17 @@
 @media (pointer: fine) {
   .card {
     background-image:
-      radial-gradient(380px circle at var(--mx, -999px) var(--my, -999px), color-mix(in srgb, var(--accent) 9%, transparent), transparent 65%),
-      linear-gradient(180deg, var(--raise) 0%, var(--card) 140px);
+      radial-gradient(380px circle at var(--mx, -999px) var(--my, -999px), color-mix(in srgb, var(--accent) 10%, transparent), transparent 65%),
+      linear-gradient(180deg,
+        color-mix(in srgb, var(--raise) 76%, transparent) 0%,
+        color-mix(in srgb, var(--card) 72%, transparent) 140px);
   }
+}
+
+@media (max-width: 640px) {
+  .app-greeting { gap: 12px; }
+  .app-greet-text { padding-left: 12px; }
+  .app-greet { font-size: 1.05rem; }
 }
 
 /* --- Rolig bevegelse ------------------------------------------------------------------ */
